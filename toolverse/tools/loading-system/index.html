@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D装箱优化系统</title>
+<title>3D Bin Packing Optimizer</title>
 <style>
 :root{--primary:#6366f1;--primary-hover:#4f46e5;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;--gray-400:#9ca3af;--gray-500:#6b7280;--gray-600:#4b5563;--gray-700:#374151;--gray-800:#1f2937;--gray-900:#111827;--shadow:0 1px 3px 0 rgb(0 0 0/0.1);--shadow-md:0 4px 6px -1px rgb(0 0 0/0.1)}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -95,17 +95,17 @@ tr:hover .btn-delete{opacity:1}
 <body>
 <div class="toolbar">
   <div class="toolbar-left">
-    <span class="toolbar-title">📦 3D装箱优化系统</span>
+    <span class="toolbar-title">📦 3D Bin Packing Optimizer</span>
     <span class="toolbar-sub">Extreme Points Algorithm</span>
   </div>
-  <button class="btn-primary" id="btn-pack" onclick="startPacking()"><span>▶</span> 开始装箱</button>
+  <button class="btn-primary" id="btn-pack" onclick="startPacking()"><span>▶</span> Start Packing</button>
 </div>
 <div class="main-content">
   <div class="top-section">
     <div class="config-panel">
       <div class="config-group">
-        <div class="section-title">容器配置</div>
-        <label class="config-label">容器类型</label>
+        <div class="section-title">Container Config</div>
+        <label class="config-label">Container Type</label>
         <select class="config-select" id="container-type">
           <option value="40HC">40HC — 1203×269×235 cm</option>
           <option value="40GP">40GP — 1203×239×235 cm</option>
@@ -113,7 +113,7 @@ tr:hover .btn-delete{opacity:1}
         </select>
       </div>
       <div class="config-group">
-        <label class="config-label">最小支撑率</label>
+        <label class="config-label">Min Support Ratio</label>
         <div class="slider-container">
           <div class="slider-header">
             <span style="font-size:11px;color:var(--gray-400)">50%</span>
@@ -125,35 +125,35 @@ tr:hover .btn-delete{opacity:1}
       </div>
       <div class="config-group">
         <label class="checkbox-row">
-          <input type="checkbox" id="enable-aggregation" checked> 启用小件聚合
+          <input type="checkbox" id="enable-aggregation" checked> Enable Small Item Aggregation
         </label>
-        <div style="font-size:11px;color:var(--gray-400);margin-top:4px;margin-left:24px;">自动聚合小于容器1/10且数量&gt;20的货物</div>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:4px;margin-left:24px;">Auto-aggregate items smaller than 1/10 of container &amp; qty &gt; 20</div>
       </div>
       <div id="results-section" style="display:none">
-        <div class="section-title">装载结果</div>
+        <div class="section-title">Packing Results</div>
         <div class="stats-grid">
-          <div class="stat-item"><div class="stat-label">已装载</div><div class="stat-value green" id="stat-packed">—</div></div>
-          <div class="stat-item"><div class="stat-label">未装载</div><div class="stat-value red" id="stat-unpacked">—</div></div>
-          <div class="stat-item"><div class="stat-label">装载率</div><div class="stat-value blue" id="stat-pack-rate">—</div></div>
-          <div class="stat-item"><div class="stat-label">空间利用率</div><div class="stat-value blue" id="stat-space-rate">—</div></div>
-          <div class="stat-item"><div class="stat-label">实重 / 限重</div><div class="stat-value orange" id="stat-weight">—</div></div>
-          <div class="stat-item"><div class="stat-label">重量利用率</div><div class="stat-value blue" id="stat-weight-rate">—</div></div>
-          <div class="stat-item"><div class="stat-label">计算耗时</div><div class="stat-value" id="stat-time">—</div></div>
-          <div class="stat-item"><div class="stat-label">重心偏移</div><div class="stat-value" id="stat-cog">—</div></div>
+          <div class="stat-item"><div class="stat-label">Loaded</div><div class="stat-value green" id="stat-packed">—</div></div>
+          <div class="stat-item"><div class="stat-label">Unloaded</div><div class="stat-value red" id="stat-unpacked">—</div></div>
+          <div class="stat-item"><div class="stat-label">Load Rate</div><div class="stat-value blue" id="stat-pack-rate">—</div></div>
+          <div class="stat-item"><div class="stat-label">Space Util.</div><div class="stat-value blue" id="stat-space-rate">—</div></div>
+          <div class="stat-item"><div class="stat-label">Actual / Max Wt.</div><div class="stat-value orange" id="stat-weight">—</div></div>
+          <div class="stat-item"><div class="stat-label">Weight Util.</div><div class="stat-value blue" id="stat-weight-rate">—</div></div>
+          <div class="stat-item"><div class="stat-label">Calc Time</div><div class="stat-value" id="stat-time">—</div></div>
+          <div class="stat-item"><div class="stat-label">CoG Offset</div><div class="stat-value" id="stat-cog">—</div></div>
         </div>
       </div>
     </div>
     <div class="table-section">
       <div class="table-header-bar">
-        <span class="table-title">货物清单</span>
-        <button class="btn-secondary" onclick="addItemRow()">＋ 添加货物</button>
+        <span class="table-title">Cargo List</span>
+        <button class="btn-secondary" onclick="addItemRow()">＋ Add Item</button>
       </div>
       <div class="table-wrapper">
         <table>
           <thead><tr>
-            <th style="width:180px">名称</th><th style="width:100px">长度(cm)</th><th style="width:100px">高度(cm)</th>
-            <th style="width:100px">宽度(cm)</th><th style="width:100px">重量(kg)</th><th style="width:90px">数量</th>
-            <th style="width:90px">堆叠限制</th><th style="width:90px">允许旋转</th><th style="width:140px">状态</th><th style="width:60px"></th>
+            <th style="width:180px">Name</th><th style="width:100px">Length(cm)</th><th style="width:100px">Height(cm)</th>
+            <th style="width:100px">Width(cm)</th><th style="width:100px">Weight(kg)</th><th style="width:90px">Qty</th>
+            <th style="width:90px">Stack Limit</th><th style="width:90px">Rotation</th><th style="width:140px">Status</th><th style="width:60px"></th>
           </tr></thead>
           <tbody id="items-tbody"></tbody>
         </table>
@@ -162,21 +162,21 @@ tr:hover .btn-delete{opacity:1}
   </div>
   <div class="bottom-section">
     <div class="viz-header">
-      <span class="viz-title">🎨 3D可视化</span>
+      <span class="viz-title">🎨 3D Visualization</span>
       <div class="viz-controls">
-        <button class="btn-icon" onclick="resetCamera()">🎥 重置视角</button>
-        <button class="btn-icon" id="btn-rotate" onclick="toggleAutoRotate()">⏯️ 自动旋转</button>
-        <button class="btn-icon" onclick="takeScreenshot()">📸 截图</button>
+        <button class="btn-icon" onclick="resetCamera()">🎥 Reset View</button>
+        <button class="btn-icon" id="btn-rotate" onclick="toggleAutoRotate()">⏯️ Auto Rotate</button>
+        <button class="btn-icon" onclick="takeScreenshot()">📸 Screenshot</button>
       </div>
     </div>
     <div id="canvas-container">
       <div id="dim-labels"></div>
-      <div id="legend-panel"><div class="legend-title">货物图例</div><div id="legend-items"></div></div>
+      <div id="legend-panel"><div class="legend-title">Legend</div><div id="legend-items"></div></div>
     </div>
   </div>
 </div>
 <div id="tooltip"><div class="tip-name"></div><div class="tip-divider"></div><div class="tip-details"></div></div>
-<div id="loading-overlay"><div class="spinner"></div><div class="loading-text">正在计算装箱方案...</div><div class="loading-progress" id="loading-progress">0%</div></div>
+<div id="loading-overlay"><div class="spinner"></div><div class="loading-text">Calculating packing solution...</div><div class="loading-progress" id="loading-progress">0%</div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -189,13 +189,13 @@ const CONTAINERS = {
   '40GP': { length: 1203, height: 239, width: 235, maxWeight: 26000 },
   '20GP': { length: 589,  height: 239, width: 235, maxWeight: 28000 }
 };
-const ITEM_COLORS = { '重型设备': 0xf59e0b, '长条配件': 0xef4444, '小配件': 0x3b82f6 };
+const ITEM_COLORS = { 'Heavy Equip': 0xf59e0b, 'Long Parts': 0xef4444, 'Small Parts': 0x3b82f6 };
 const DEFAULT_COLOR = 0x8b5cf6;
 const COLOR_PALETTE = [0xf59e0b, 0xef4444, 0x3b82f6, 0x8b5cf6, 0x10b981, 0xec4899, 0x14b8a6, 0xf97316, 0x06b6d4, 0x84cc16];
 const DEFAULT_ITEMS = [
-  { name:"重型设备", length:500, height:100, width:60, weight:3000, quantity:15, stackLimit:1, allowRotate:false },
-  { name:"长条配件", length:100, height:30, width:30, weight:50, quantity:20, stackLimit:5, allowRotate:true },
-  { name:"小配件", length:10, height:10, width:10, weight:1, quantity:100, stackLimit:10, allowRotate:false }
+  { name:"Heavy Equip", length:500, height:100, width:60, weight:3000, quantity:15, stackLimit:1, allowRotate:false },
+  { name:"Long Parts", length:100, height:30, width:30, weight:50, quantity:20, stackLimit:5, allowRotate:true },
+  { name:"Small Parts", length:10, height:10, width:10, weight:1, quantity:100, stackLimit:10, allowRotate:false }
 ];
 
 // =============================================
@@ -244,7 +244,7 @@ function makeTextSprite(text, color, fs) {
 }
 
 function addCoordinateAxes() {
-  [{c:0xff0000,d:'x',l:'X (长度)',p:[650,0,0]},{c:0x00ff00,d:'y',l:'Y (高度)',p:[0,650,0]},{c:0x0000ff,d:'z',l:'Z (宽度)',p:[0,0,650]}].forEach(a => {
+  [{c:0xff0000,d:'x',l:'X (Length)',p:[650,0,0]},{c:0x00ff00,d:'y',l:'Y (Height)',p:[0,650,0]},{c:0x0000ff,d:'z',l:'Z (Width)',p:[0,0,650]}].forEach(a => {
     const mat = new THREE.MeshBasicMaterial({color:a.c});
     const cyl = new THREE.Mesh(new THREE.CylinderGeometry(3,3,600,8), mat);
     if(a.d==='x'){cyl.rotation.z=-Math.PI/2;cyl.position.set(300,0,0)}
@@ -283,9 +283,9 @@ function onMouseMove(e) {
       tip.style.display = 'block';
       tip.style.left = (e.clientX+15)+'px'; tip.style.top = (e.clientY+15)+'px';
       tip.querySelector('.tip-name').textContent = d.name;
-      let html = '尺寸: '+d.origL+'×'+d.origH+'×'+d.origW+' cm<br>重量: '+d.weight+' kg<br>位置: ('+d.x+', '+d.y+', '+d.z+')';
-      if (d.stackLayer !== undefined) html += '<br>堆叠: 第'+d.stackLayer+'层 / 限'+d.stackMax+'层';
-      if (d.aggCount > 1) html += '<br>聚合: '+d.aggCount+'件';
+      let html = 'Size: '+d.origL+'×'+d.origH+'×'+d.origW+' cm<br>Weight: '+d.weight+' kg<br>Pos: ('+d.x+', '+d.y+', '+d.z+')';
+      if (d.stackLayer !== undefined) html += '<br>Stack: Layer '+d.stackLayer+' / Max '+d.stackMax+'';
+      if (d.aggCount > 1) html += '<br>Aggregated: '+d.aggCount+ ' pcs';
       tip.querySelector('.tip-details').innerHTML = html;
       return;
     }
@@ -306,10 +306,10 @@ function createRow(it) {
     +'<td><input class="cell-input" type="number" min="1" value="'+it.stackLimit+'" data-field="stackLimit"></td>'
     +'<td style="text-align:center"><input class="cell-checkbox" type="checkbox" '+(it.allowRotate?'checked':'')+' data-field="allowRotate"></td>'
     +'<td class="status-cell"></td>'
-    +'<td><button class="btn-delete" onclick="deleteRow(this)" title="删除">✕</button></td></tr>';
+    +'<td><button class="btn-delete" onclick="deleteRow(this)" title="Delete">✕</button></td></tr>';
 }
 function initTable() { document.getElementById('items-tbody').innerHTML = DEFAULT_ITEMS.map(createRow).join(''); }
-function addItemRow() { document.getElementById('items-tbody').insertAdjacentHTML('beforeend', createRow({name:"新货物",length:50,height:50,width:50,weight:10,quantity:1,stackLimit:5,allowRotate:true})); }
+function addItemRow() { document.getElementById('items-tbody').insertAdjacentHTML('beforeend', createRow({name:"New Item",length:50,height:50,width:50,weight:10,quantity:1,stackLimit:5,allowRotate:true})); }
 function deleteRow(btn) { const tb=document.getElementById('items-tbody'); if(tb.rows.length>1) btn.closest('tr').remove(); }
 function readTableData() {
   const items = [];
@@ -318,7 +318,7 @@ function readTableData() {
     row.querySelectorAll('.cell-input,.cell-checkbox').forEach(inp => {
       const f=inp.dataset.field;
       if(f==='allowRotate') it[f]=inp.checked;
-      else if(f==='name') it[f]=inp.value||'未命名';
+      else if(f==='name') it[f]=inp.value||'Unnamed';
       else it[f]=Math.abs(parseFloat(inp.value))||1;
     });
     if(it.length>0&&it.height>0&&it.width>0&&it.weight>0&&it.quantity>0) {
@@ -334,8 +334,8 @@ function updateTableStatus(res) {
     const r=res[ni.value]; row.classList.remove('row-packed','row-unpacked');
     if(!r){sc.innerHTML='';return;}
     let h='';
-    if(r.packed>0) h+='<span class="badge badge-green">已装载 '+r.packed+'</span> ';
-    if(r.unpacked>0) h+='<span class="badge badge-red">未装载 '+r.unpacked+'</span>';
+    if(r.packed>0) h+='<span class="badge badge-green">Loaded '+r.packed+'</span> ';
+    if(r.unpacked>0) h+='<span class="badge badge-red">Unloaded '+r.unpacked+'</span>';
     sc.innerHTML=h;
     if(r.unpacked===0) row.classList.add('row-packed');
     else if(r.packed===0) row.classList.add('row-unpacked');
@@ -635,7 +635,7 @@ function updateLegend(names, ncm) {
 }
 function updateDimLabels(d) {
   const el=document.getElementById('dim-labels'); el.style.display='block';
-  el.innerHTML='容器: <b>'+d.length+'</b>×<b>'+d.height+'</b>×<b>'+d.width+'</b> cm | 限重: <b>'+d.maxWeight+'</b> kg';
+  el.innerHTML='Container: <b>'+d.length+'</b>×<b>'+d.height+'</b>×<b>'+d.width+'</b> cm | Max Wt: <b>'+d.maxWeight+'</b> kg';
 }
 
 // =============================================
@@ -648,7 +648,7 @@ async function startPacking() {
   const t0=performance.now();
   try {
     const td=readTableData();
-    if(!td.length){alert('请添加货物');return;}
+    if(!td.length){alert('Please add items');return;}
     const ct=document.getElementById('container-type').value;
     const cont=CONTAINERS[ct];
     const sr=parseInt(document.getElementById('support-slider').value);
@@ -689,7 +689,7 @@ async function startPacking() {
 
     clearScene(); currentContainerDims=cont;
     renderContainer(cont); renderItems(packer.packed, cont);
-  } catch(err){console.error(err);alert('装箱计算出错: '+err.message);}
+  } catch(err){console.error(err);alert('Packing error: '+err.message);}
   finally{ov.classList.remove('active');btn.disabled=false;}
 }
 
