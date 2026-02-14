@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TableExtract — PDF Table to Excel Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+
+<!-- PDF.js for reading PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- SheetJS for generating Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+:root {
+  --bg: #FAF8F6;
+  --bg-card: #FFFFFF;
+  --bg-dark: #1A1916;
+  --text: #1A1916;
+  --text-2: #6B6560;
+  --text-3: #A9A29B;
+  --border: #E8E3DE;
+  --border-lt: #F0ECE8;
+  --accent: #D4542B;
+  --accent-hover: #BA4523;
+  --accent-light: #FFF1EC;
+  --accent-lighter: #FEF7F4;
+  --green: #2D8B5F;
+  --green-bg: #EEFBF3;
+  --blue: #3574D4;
+  --blue-bg: #EDF4FE;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --shadow-md: 0 4px 16px rgba(26,25,22,0.08);
+  --font-body: 'DM Sans', sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;opacity:.35;pointer-events:none;z-index:9999;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(250,248,246,.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border-lt)}
+.nav-inner{max-width:1120px;margin:0 auto;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.nav-logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(212,84,43,.25)}
+.nav-title{font-weight:700;font-size:16px;letter-spacing:-.3px}
+.nav-links{display:flex;gap:32px;align-items:center}
+.nav-links a{font-size:14px;color:var(--text-2);text-decoration:none;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+
+/* HERO */
+.hero{max-width:1120px;margin:0 auto;padding:72px 32px 20px;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent-light);color:var(--accent);font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:.3px;animation:fadeDown .6s ease both}
+.hero h1{font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:800;letter-spacing:-1.5px;line-height:1.1;color:var(--text);margin-bottom:16px;animation:fadeDown .6s ease .1s both}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.hero p{font-size:17px;color:var(--text-2);max-width:520px;margin:0 auto 48px;line-height:1.65;animation:fadeDown .6s ease .2s both}
+
+/* STEPS */
+.steps{display:flex;justify-content:center;gap:40px;margin-bottom:48px;animation:fadeDown .6s ease .3s both}
+.step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-3);font-weight:500;transition:color .3s}
+.step.active{color:var(--accent)}
+.step.done{color:var(--green)}
+.step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid var(--border);color:var(--text-3);transition:all .3s}
+.step.active .step-num{border-color:var(--accent);background:var(--accent);color:#fff}
+.step.done .step-num{border-color:var(--green);background:var(--green);color:#fff}
+.step-connector{width:40px;height:2px;background:var(--border);align-self:center;transition:background .3s}
+.step-connector.done{background:var(--green)}
+
+/* CARD */
+.main-card{max-width:680px;margin:0 auto 80px;padding:0 32px;animation:fadeDown .6s ease .35s both}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);overflow:hidden}
+
+/* UPLOAD */
+.upload-zone{padding:56px 32px;text-align:center;cursor:pointer;transition:all .25s;position:relative}
+.upload-zone::before{content:'';position:absolute;inset:16px;border:2px dashed var(--border);border-radius:14px;transition:all .25s;pointer-events:none}
+.upload-zone:hover::before{border-color:var(--accent)}
+.upload-zone.dragover{background:var(--accent-lighter)}
+.upload-zone.dragover::before{border-color:var(--accent);border-style:solid}
+.upload-icon{width:72px;height:72px;margin:0 auto 20px;background:linear-gradient(135deg,var(--accent-light),#FDE8E0);border-radius:20px;display:flex;align-items:center;justify-content:center;transition:transform .3s}
+.upload-zone:hover .upload-icon{transform:translateY(-4px)}
+.upload-icon svg{width:32px;height:32px;color:var(--accent)}
+.upload-title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:6px}
+.upload-title span{color:var(--accent);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.upload-hint{font-size:13px;color:var(--text-3)}
+.upload-input{display:none}
+
+/* FILE STATE */
+.file-state{padding:28px 32px;display:none}
+.file-state.visible{display:block}
+.file-row{display:flex;align-items:center;gap:16px;padding:16px 20px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border-lt)}
+.file-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(135deg,#E74C3C,#C0392B);color:#fff;font-size:11px;font-weight:700;letter-spacing:.5px}
+.file-info{flex:1;min-width:0}
+.file-name{font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-meta{font-size:12px;color:var(--text-3);margin-top:2px}
+.file-remove{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--text-3);font-size:16px}
+.file-remove:hover{background:#FEF2F2;border-color:#FCA5A5;color:#DC2626}
+
+/* SETTINGS */
+.settings-bar{padding:0 32px;display:none}
+.settings-bar.visible{display:block}
+.settings-row{display:flex;align-items:center;gap:20px;padding:14px 0;border-top:1px solid var(--border-lt);flex-wrap:wrap}
+.setting-group{display:flex;align-items:center;gap:8px}
+.setting-label{font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px}
+.setting-input{height:32px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px;color:var(--text);background:var(--bg);outline:none;font-family:var(--font-body);transition:border .15s;width:110px}
+.setting-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(212,84,43,.08)}
+
+/* BUTTON */
+.action-bar{padding:24px 32px 28px;display:none}
+.action-bar.visible{display:block}
+.btn-convert{width:100%;height:52px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-convert:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(212,84,43,.25)}
+.btn-convert:active{transform:translateY(0)}
+.btn-convert:disabled{background:var(--border);color:var(--text-3);cursor:not-allowed;transform:none;box-shadow:none}
+.btn-convert.loading{background:var(--bg-dark);pointer-events:none}
+
+/* PROGRESS */
+.progress-panel{padding:0 32px 28px;display:none}
+.progress-panel.visible{display:block}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.progress-label{font-size:13px;font-weight:600;color:var(--text)}
+.progress-pct{font-size:13px;font-weight:600;color:var(--accent);font-family:var(--font-mono)}
+.progress-track{height:6px;background:var(--border-lt);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#E8764A);border-radius:3px;width:0%;transition:width .5s ease}
+.progress-sub{font-size:12px;color:var(--text-3);margin-top:8px}
+
+/* LOG */
+.log-wrap{margin:0 32px 24px;display:none}
+.log-wrap.visible{display:block}
+.log-toggle{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-3);cursor:pointer;user-select:none;padding:6px 0;text-transform:uppercase;letter-spacing:.5px}
+.log-toggle .arrow{font-size:8px;transition:transform .2s;display:inline-block}
+.log-toggle .arrow.open{transform:rotate(90deg)}
+.log-box{background:var(--bg-dark);border-radius:10px;padding:14px 16px;font-family:var(--font-mono);font-size:11px;line-height:1.9;max-height:160px;overflow-y:auto;display:none;margin-top:8px;scrollbar-width:thin;scrollbar-color:#3a3832 transparent}
+.log-box.open{display:block}
+.log-box::-webkit-scrollbar{width:4px}
+.log-box::-webkit-scrollbar-thumb{background:#3a3832;border-radius:2px}
+.log-line{color:#a09a91}
+.log-line .ts{color:#5a554e}
+.log-line.ok{color:#5cdb8b}
+.log-line.warn{color:#f0c246}
+.log-line.err{color:#f07070}
+
+/* RESULTS */
+.results{display:none}
+.results.visible{display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);margin:0 32px 24px}
+.stat-item{padding:20px 12px;text-align:center;border-right:1px solid var(--border-lt)}
+.stat-item:last-child{border-right:none}
+.stat-num{font-size:30px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.5px;font-family:var(--font-display)}
+.stat-label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin-top:2px}
+.preview-section{padding:0 32px 24px}
+.preview-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.preview-title .badge{font-size:10px;font-weight:700;background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:6px}
+.table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.table-label{padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border-lt);font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;display:flex;justify-content:space-between}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:9px 14px;font-weight:600;font-size:11px;color:var(--text-2);background:var(--bg);border-bottom:2px solid var(--border);white-space:nowrap}
+.tbl td{padding:9px 14px;border-bottom:1px solid var(--border-lt);color:var(--text);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--accent-lighter)}
+.extra-note{font-size:12px;color:var(--text-3);padding:4px 0;font-style:italic}
+.download-bar{padding:0 32px 28px}
+.btn-download{width:100%;height:52px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn-download:hover{background:#247A52;transform:translateY(-1px);box-shadow:0 6px 20px rgba(45,139,95,.25)}
+.btn-download svg{width:18px;height:18px}
+.btn-again{width:100%;height:44px;margin-top:10px;background:transparent;color:var(--text-2);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:500;font-family:var(--font-body);cursor:pointer;transition:all .15s}
+.btn-again:hover{background:var(--bg);color:var(--text)}
+
+/* FEATURES */
+.features{max-width:1120px;margin:0 auto 80px;padding:0 32px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.feat{padding:28px;background:var(--bg-card);border:1px solid var(--border-lt);border-radius:var(--radius);transition:box-shadow .3s,transform .3s}
+.feat:hover{box-shadow:var(--shadow-md);transform:translateY(-3px)}
+.feat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px}
+.feat-icon.orange{background:var(--accent-light)}
+.feat-icon.blue{background:var(--blue-bg)}
+.feat-icon.green{background:var(--green-bg)}
+.feat h3{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px}
+.feat p{font-size:13px;color:var(--text-2);line-height:1.6}
+.footer{text-align:center;padding:32px;border-top:1px solid var(--border-lt);font-size:13px;color:var(--text-3)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite}
+@keyframes fadeDown{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.fade-in{animation:fadeIn .4s ease both}
+@media(max-width:768px){.hero{padding:48px 20px 20px}.hero h1{font-size:32px}.steps{gap:16px;font-size:12px}.step-connector{width:20px}.features{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.nav-links{display:none}.main-card{padding:0 16px}}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="nav-inner">
+  <a href="#" class="nav-brand"><div class="nav-logo">TE</div><div class="nav-title">TableExtract</div></a>
+
+</div></nav>
+
+<section class="hero">
+  <div class="hero-badge">✦ 100% browser-based — your files never leave your device</div>
+  <h1>PDF Table to <em>Excel</em></h1>
+  <p>Extract tables from your PDF documents and convert them into clean, structured Excel spreadsheets in seconds.</p>
+  <div class="steps" id="steps">
+    <div class="step active" id="step1"><div class="step-num">1</div>Upload</div>
+    <div class="step-connector" id="conn1"></div>
+    <div class="step" id="step2"><div class="step-num">2</div>Convert</div>
+    <div class="step-connector" id="conn2"></div>
+    <div class="step" id="step3"><div class="step-num">3</div>Download</div>
+  </div>
+</section>
+
+<div class="main-card"><div class="card">
+  <div class="upload-zone" id="uploadZone">
+    <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+    <div class="upload-title"><span>Click to upload</span> or drag and drop</div>
+    <div class="upload-hint">PDF files · up to 100 MB</div>
+    <input type="file" class="upload-input" id="fileInput" accept=".pdf">
+  </div>
+  <div class="file-state" id="fileState">
+    <div class="file-row">
+      <div class="file-icon">PDF</div>
+      <div class="file-info"><div class="file-name" id="fileName">—</div><div class="file-meta" id="fileMeta">—</div></div>
+      <button class="file-remove" id="fileRemove" title="Remove">×</button>
+    </div>
+  </div>
+  <div class="settings-bar" id="settingsBar">
+    <div class="settings-row">
+      <div class="setting-group"><span class="setting-label">Pages</span><input class="setting-input" id="inputPages" value="all" placeholder="all / 1-5"></div>
+    </div>
+  </div>
+  <div class="action-bar" id="actionBar">
+    <button class="btn-convert" id="btnConvert">Convert to Excel →</button>
+    <div id="rateBadge" style="text-align:center;font-size:12px;color:var(--text-3);margin-top:10px;font-weight:500;"></div>
+  </div>
+  <div class="progress-panel" id="progressPanel">
+    <div class="progress-header"><span class="progress-label" id="progressLabel">Converting…</span><span class="progress-pct" id="progressPct">0%</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-sub" id="progressSub">Preparing…</div>
+  </div>
+  <div class="log-wrap" id="logWrap">
+    <div class="log-toggle" id="logToggle"><span class="arrow" id="logArrow">▶</span> Console output</div>
+    <div class="log-box" id="logBox"></div>
+  </div>
+  <div class="results" id="results">
+    <div class="stats-grid">
+      <div class="stat-item"><div class="stat-num" id="statTables">0</div><div class="stat-label">Tables</div></div>
+      <div class="stat-item"><div class="stat-num" id="statRows">0</div><div class="stat-label">Rows</div></div>
+      <div class="stat-item"><div class="stat-num" id="statPages">0</div><div class="stat-label">Pages</div></div>
+      <div class="stat-item"><div class="stat-num" id="statTime">0s</div><div class="stat-label">Time</div></div>
+    </div>
+    <div class="preview-section" id="previewSection">
+      <div class="preview-title">Preview <span class="badge">First 3 tables</span></div>
+      <div id="previewContent"></div>
+    </div>
+    <div class="download-bar">
+      <button class="btn-download" id="btnDownload">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download .xlsx
+      </button>
+      <button class="btn-again" id="btnAgain">Convert another file</button>
+    </div>
+  </div>
+</div></div>
+
+<div class="features">
+  <div class="feat"><div class="feat-icon orange">⚡</div><h3>Instant Processing</h3><p>Pure browser-based extraction — no server uploads, no waiting, results in seconds.</p></div>
+  <div class="feat"><div class="feat-icon blue">🔍</div><h3>Smart Detection</h3><p>Detects table structures by analyzing text positioning, spacing, and alignment patterns.</p></div>
+  <div class="feat"><div class="feat-icon green">🔒</div><h3>100% Private</h3><p>All processing happens locally in your browser. Your files never leave your device.</p></div>
+</div>
+
+<footer class="footer">TableExtract · Free PDF Table Extraction Tool</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  PDF TABLE EXTRACTION ENGINE (pure client-side)
+//  Uses PDF.js to read text items, then heuristic clustering
+//  to reconstruct table rows/columns from text positions.
+// ═══════════════════════════════════════════════════════════
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/**
+ * Extract structured tables from a PDF ArrayBuffer.
+ * Returns { tables: [{cols, rows}], pageCount }
+ */
+async function extractTablesFromPDF(arrayBuffer, pageRange, onProgress, onLog) {
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const totalPages = pdf.numPages;
+  onLog(`PDF loaded — ${totalPages} page(s)`, 'info');
+
+  // Parse page range
+  let pageList = [];
+  if (!pageRange || pageRange.trim().toLowerCase() === 'all') {
+    pageList = Array.from({ length: totalPages }, (_, i) => i + 1);
+  } else {
+    for (const part of pageRange.split(',')) {
+      const p = part.trim();
+      if (p.includes('-')) {
+        const [a, b] = p.split('-').map(Number);
+        for (let i = a; i <= Math.min(b, totalPages); i++) pageList.push(i);
+      } else {
+        const n = parseInt(p);
+        if (n >= 1 && n <= totalPages) pageList.push(n);
+      }
+    }
+  }
+
+  const allTables = [];
+  for (let idx = 0; idx < pageList.length; idx++) {
+    const pageNum = pageList[idx];
+    onProgress(Math.round(((idx) / pageList.length) * 90) + 5, `Processing page ${idx + 1} / ${pageList.length}`);
+
+    const page = await pdf.getPage(pageNum);
+    const textContent = await page.getTextContent();
+    const items = textContent.items.filter(it => it.str.trim().length > 0);
+
+    if (items.length < 4) continue; // too few items for a table
+
+    const tables = detectTables(items, page.view);
+    if (tables.length > 0) {
+      onLog(`Page ${pageNum}: ${tables.length} table(s) found`, 'ok');
+      allTables.push(...tables);
+    }
+  }
+
+  onProgress(100, 'Complete');
+  return { tables: allTables, pageCount: pageList.length };
+}
+
+/**
+ * Heuristic table detection from PDF text items.
+ * Groups items into rows by Y-coordinate clustering,
+ * then into columns by X-coordinate clustering.
+ * A group of 2+ rows with 2+ consistent columns = table.
+ */
+function detectTables(items, pageView) {
+  // Normalize coordinates (PDF Y is bottom-up)
+  const pageHeight = pageView[3] - pageView[1];
+  const points = items.map(it => ({
+    text: it.str.trim(),
+    x: Math.round(it.transform[4] * 10) / 10,
+    y: Math.round((pageHeight - it.transform[5]) * 10) / 10,
+    w: it.width || 0,
+  }));
+
+  // Cluster by Y (rows) with tolerance
+  const yTol = 4;
+  points.sort((a, b) => a.y - b.y);
+  const rows = [];
+  let currentRow = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    if (Math.abs(points[i].y - currentRow[0].y) <= yTol) {
+      currentRow.push(points[i]);
+    } else {
+      if (currentRow.length >= 2) rows.push(currentRow);
+      currentRow = [points[i]];
+    }
+  }
+  if (currentRow.length >= 2) rows.push(currentRow);
+
+  if (rows.length < 2) return [];
+
+  // Sort each row by X
+  rows.forEach(r => r.sort((a, b) => a.x - b.x));
+
+  // Find consistent column count (mode of row lengths)
+  const lenCounts = {};
+  rows.forEach(r => { lenCounts[r.length] = (lenCounts[r.length] || 0) + 1; });
+  const modeLen = +Object.entries(lenCounts).sort((a, b) => b[1] - a[1])[0][0];
+
+  if (modeLen < 2) return [];
+
+  // Group consecutive rows with consistent column count into tables
+  const tables = [];
+  let tableRows = [];
+  for (const row of rows) {
+    // Allow slight variation: ±1 from mode
+    if (Math.abs(row.length - modeLen) <= 1) {
+      tableRows.push(row);
+    } else {
+      if (tableRows.length >= 2) tables.push(buildTable(tableRows, modeLen));
+      tableRows = [];
+    }
+  }
+  if (tableRows.length >= 2) tables.push(buildTable(tableRows, modeLen));
+
+  return tables;
+}
+
+function buildTable(tableRows, numCols) {
+  // For each row, distribute items into N columns by X-position
+  // Collect all X positions to determine column boundaries
+  const allX = [];
+  tableRows.forEach(row => row.forEach(item => allX.push(item.x)));
+  allX.sort((a, b) => a - b);
+
+  // K-means-ish: pick N cluster centers from the X positions
+  const step = Math.floor(allX.length / numCols);
+  const centers = [];
+  for (let i = 0; i < numCols; i++) {
+    centers.push(allX[Math.min(i * step + Math.floor(step / 2), allX.length - 1)]);
+  }
+
+  function assignCol(x) {
+    let best = 0, bestDist = Infinity;
+    for (let c = 0; c < centers.length; c++) {
+      const d = Math.abs(x - centers[c]);
+      if (d < bestDist) { bestDist = d; best = c; }
+    }
+    return best;
+  }
+
+  const result = [];
+  for (const row of tableRows) {
+    const cells = new Array(numCols).fill('');
+    for (const item of row) {
+      const col = assignCol(item.x);
+      cells[col] = cells[col] ? cells[col] + ' ' + item.text : item.text;
+    }
+    result.push(cells);
+  }
+
+  // Use first row as column headers
+  const cols = result[0];
+  const dataRows = result.slice(1);
+  return { cols, rows: dataRows, total_rows: dataRows.length };
+}
+
+/**
+ * Generate an XLSX blob from extracted tables using SheetJS.
+ */
+function generateExcel(tables) {
+  const wb = XLSX.utils.book_new();
+  // Merge all tables into one sheet, separated by a blank row
+  const aoa = [];
+  let globalMaxCols = 0;
+  tables.forEach(tbl => { globalMaxCols = Math.max(globalMaxCols, tbl.cols.length); });
+
+  // Collect all rows from all tables (headers + data)
+  const allRows = [];
+  const headerKeys = new Set(); // all unique header signatures
+  tables.forEach((tbl) => {
+    const pad = r => { const p = [...r]; while (p.length < globalMaxCols) p.push(''); return p; };
+    const hk = pad(tbl.cols).join('\x00');
+    headerKeys.add(hk);
+    allRows.push(pad(tbl.cols));
+    tbl.rows.forEach(r => allRows.push(pad(r)));
+  });
+
+  // Final pass: walk all rows, only keep header rows on their FIRST appearance,
+  // skip any subsequent row that matches ANY known header pattern.
+  const seenHeaders = new Set();
+  for (let i = 0; i < allRows.length; i++) {
+    const key = allRows[i].join('\x00');
+    if (headerKeys.has(key)) {
+      if (seenHeaders.has(key)) continue; // duplicate header → skip
+      seenHeaders.add(key);
+    }
+    aoa.push(allRows[i]);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  // Auto-width columns
+  const maxLens = new Array(globalMaxCols).fill(0);
+  aoa.forEach(row => { row.forEach((c, ci) => { maxLens[ci] = Math.max(maxLens[ci], (String(c) || '').length); }); });
+  ws['!cols'] = maxLens.map(l => ({ wch: Math.min(l + 2, 40) }));
+  XLSX.utils.book_append_sheet(wb, ws, 'All Tables');
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+
+// ═══════════════════════════════════════════════════════════
+//  UI LOGIC
+// ═══════════════════════════════════════════════════════════
+
+const $ = id => document.getElementById(id);
+let selectedFile = null;
+let downloadBlob = null;
+let downloadName = '';
+
+const uploadZone = $('uploadZone'), fileInput = $('fileInput'),
+      fileState = $('fileState'), settingsBar = $('settingsBar'),
+      actionBar = $('actionBar'), btnConvert = $('btnConvert'),
+      progPanel = $('progressPanel'), progFill = $('progressFill'),
+      progPct = $('progressPct'), progLabel = $('progressLabel'),
+      progSub = $('progressSub'), logWrap = $('logWrap'),
+      logBox = $('logBox'), logToggle = $('logToggle'),
+      logArrow = $('logArrow'), results = $('results'),
+      prevContent = $('previewContent');
+
+function setStep(n) {
+  ['step1','step2','step3'].forEach((id,i)=>{$(id).className='step'+(i<n?' done':i===n?' active':'')});
+  ['conn1','conn2'].forEach((id,i)=>{$(id).className='step-connector'+(i<n?' done':'')});
+}
+
+// Upload
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) onFile(e.target.files[0]); });
+
+function onFile(f) {
+  if (!f.name.toLowerCase().endsWith('.pdf')) return alert('Please select a PDF file.');
+  selectedFile = f;
+  const kb = f.size/1024, sz = kb<1024 ? kb.toFixed(0)+' KB' : (kb/1024).toFixed(1)+' MB';
+  $('fileName').textContent = f.name;
+  $('fileMeta').textContent = sz + ' · PDF Document';
+  uploadZone.style.display = 'none';
+  fileState.classList.add('visible');
+  settingsBar.classList.add('visible');
+  actionBar.classList.add('visible');
+  results.classList.remove('visible');
+  progPanel.classList.remove('visible');
+  logWrap.classList.remove('visible');
+  setStep(1);
+  updateRateBadge();
+}
+
+$('fileRemove').addEventListener('click', resetAll);
+$('btnAgain').addEventListener('click', resetAll);
+function resetAll() {
+  selectedFile = null; downloadBlob = null;
+  uploadZone.style.display = '';
+  fileState.classList.remove('visible');
+  settingsBar.classList.remove('visible');
+  actionBar.classList.remove('visible');
+  results.classList.remove('visible');
+  progPanel.classList.remove('visible');
+  logWrap.classList.remove('visible');
+  fileInput.value = '';
+  setStep(0);
+}
+
+// Log toggle
+logToggle.addEventListener('click', () => { logBox.classList.toggle('open'); logArrow.classList.toggle('open'); });
+
+function setProgress(pct, text) {
+  progFill.style.width = pct+'%'; progPct.textContent = pct+'%'; progSub.textContent = text;
+  progLabel.textContent = pct >= 100 ? 'Complete' : 'Converting…';
+}
+function addLog(msg, level) {
+  const ts = new Date().toLocaleTimeString('en-US',{hour12:false});
+  logBox.innerHTML += `<div class="log-line ${level||'info'}"><span class="ts">${ts}  </span>${esc(msg)}</div>`;
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+// ── RATE LIMITER (3 conversions per hour) ──
+const RATE_LIMIT = 3;
+const RATE_WINDOW = 60 * 60 * 1000; // 1 hour in ms
+const STORAGE_KEY = 'te_convert_log';
+
+function getRateLog() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw).filter(ts => Date.now() - ts < RATE_WINDOW);
+  } catch { return []; }
+}
+function saveRateLog(log) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(log)); } catch {}
+}
+function checkRateLimit() {
+  const log = getRateLog();
+  saveRateLog(log); // clean up expired entries
+  if (log.length >= RATE_LIMIT) {
+    const oldest = log[0];
+    const resetAt = oldest + RATE_WINDOW;
+    const waitMs = resetAt - Date.now();
+    const mins = Math.ceil(waitMs / 60000);
+    const resetTime = new Date(resetAt);
+    const hh = String(resetTime.getHours()).padStart(2,'0');
+    const mm = String(resetTime.getMinutes()).padStart(2,'0');
+    return { allowed: false, remaining: 0, waitMins: mins, resetTime: `${hh}:${mm}` };
+  }
+  return { allowed: true, remaining: RATE_LIMIT - log.length };
+}
+function recordConversion() {
+  const log = getRateLog();
+  log.push(Date.now());
+  saveRateLog(log);
+}
+function updateRateBadge() {
+  const check = checkRateLimit();
+  const badge = $('rateBadge');
+  if (!badge) return;
+  if (check.allowed) {
+    badge.textContent = `${check.remaining} / ${RATE_LIMIT} conversions remaining this hour`;
+    badge.style.color = 'var(--text-3)';
+  } else {
+    badge.textContent = `Limit reached · Next available at ${check.resetTime} (${check.waitMins} min)`;
+    badge.style.color = 'var(--accent)';
+  }
+}
+
+// ── CONVERT ──
+btnConvert.addEventListener('click', async () => {
+  if (!selectedFile) return;
+
+  // Rate limit check
+  const rateCheck = checkRateLimit();
+  if (!rateCheck.allowed) {
+    alert(`⏳ Conversion limit reached (${RATE_LIMIT} per hour).\n\nYou can convert again at ${rateCheck.resetTime} (in about ${rateCheck.waitMins} minutes).`);
+    updateRateBadge();
+    return;
+  }
+
+  recordConversion();
+  updateRateBadge();
+  btnConvert.disabled = true;
+  btnConvert.classList.add('loading');
+  btnConvert.innerHTML = '<div class="spinner"></div> Converting…';
+  setStep(1);
+  progPanel.classList.add('visible');
+  logWrap.classList.add('visible');
+  logBox.innerHTML = '';
+  results.classList.remove('visible');
+  progFill.style.width = '0%';
+
+  const t0 = performance.now();
+
+  try {
+    const buf = await selectedFile.arrayBuffer();
+    addLog('File read into memory', 'info');
+
+    const pages = $('inputPages').value || 'all';
+    const { tables, pageCount } = await extractTablesFromPDF(buf, pages, setProgress, addLog);
+
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+    const totalRows = tables.reduce((s, t) => s + t.total_rows, 0);
+
+    if (tables.length === 0) {
+      addLog('No tables detected in this PDF.', 'err');
+      addLog('Tip: This tool works best with structured table data.', 'warn');
+    } else {
+      addLog(`Generating Excel file…`, 'info');
+      downloadBlob = generateExcel(tables);
+      downloadName = selectedFile.name.replace(/\.pdf$/i, '') + '.xlsx';
+      addLog(`Excel generated — ${(downloadBlob.size/1024).toFixed(0)} KB`, 'ok');
+    }
+
+    // Show results
+    setStep(2);
+    $('statTables').textContent = tables.length;
+    $('statRows').textContent = totalRows;
+    $('statPages').textContent = pageCount;
+    $('statTime').textContent = elapsed + 's';
+
+    prevContent.innerHTML = '';
+    const previewTables = tables.slice(0, 3);
+    previewTables.forEach((tbl, i) => {
+      const ths = tbl.cols.map(c => `<th>${esc(c)}</th>`).join('');
+      const trs = tbl.rows.slice(0, 6).map(row => '<tr>' + row.map(v => `<td>${esc(v)}</td>`).join('') + '</tr>').join('');
+      prevContent.innerHTML += `
+        <div class="table-wrap fade-in">
+          <div class="table-label"><span>Table ${i+1}</span><span>${tbl.total_rows} rows</span></div>
+          <div style="overflow-x:auto"><table class="tbl"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>
+        </div>`;
+    });
+    if (tables.length > 3) {
+      prevContent.innerHTML += `<div class="extra-note">+ ${tables.length - 3} more table(s) in the download</div>`;
+    }
+
+    actionBar.classList.remove('visible');
+    results.classList.add('visible');
+
+  } catch (err) {
+    addLog('Error: ' + err.message, 'err');
+    progFill.style.background = '#DC2626';
+  }
+
+  btnConvert.disabled = false;
+  btnConvert.classList.remove('loading');
+  btnConvert.innerHTML = 'Convert to Excel →';
+});
+
+// ── DOWNLOAD ──
+$('btnDownload').addEventListener('click', () => {
+  if (!downloadBlob) {
+    alert('No file ready for download. Please convert a PDF first.');
+    return;
+  }
+  const url = URL.createObjectURL(downloadBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = downloadName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  setStep(2); // mark download step as done visually
+  addLog('Download started: ' + downloadName, 'ok');
+});
+
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+
+// Initialize rate badge on load
+updateRateBadge();
+</script>
+</body>
+</html>

@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D装箱优化系统</title>
+<style>
+:root{--primary:#6366f1;--primary-hover:#4f46e5;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;--gray-400:#9ca3af;--gray-500:#6b7280;--gray-600:#4b5563;--gray-700:#374151;--gray-800:#1f2937;--gray-900:#111827;--shadow:0 1px 3px 0 rgb(0 0 0/0.1);--shadow-md:0 4px 6px -1px rgb(0 0 0/0.1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;background:var(--gray-50);color:var(--gray-800);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.toolbar{height:56px;background:#fff;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0;box-shadow:var(--shadow);z-index:10}
+.toolbar-left{display:flex;align-items:baseline;gap:10px}
+.toolbar-title{font-size:20px;font-weight:700;color:var(--gray-900)}
+.toolbar-sub{font-size:12px;font-weight:500;color:var(--gray-400)}
+.btn-primary{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer;box-shadow:var(--shadow);transition:all .2s ease;display:flex;align-items:center;gap:6px}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.4)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.top-section{height:55%;display:flex;border-bottom:1px solid var(--gray-200);overflow:hidden}
+.config-panel{width:300px;flex-shrink:0;background:#fff;border-right:1px solid var(--gray-200);overflow-y:auto;padding:20px}
+.config-panel::-webkit-scrollbar{width:8px}
+.config-panel::-webkit-scrollbar-track{background:var(--gray-100)}
+.config-panel::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:4px}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-400);margin-bottom:14px}
+.config-group{margin-bottom:24px}
+.config-label{display:block;font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:6px}
+.config-select{width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:6px;font-size:13px;color:var(--gray-800);background:#fff;outline:none;transition:all .2s ease}
+.config-select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.slider-container{margin-top:4px}
+.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.slider-value{font-size:13px;font-weight:600;color:var(--primary);background:rgba(99,102,241,.08);padding:2px 8px;border-radius:4px}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--gray-200);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--primary);cursor:pointer;box-shadow:0 1px 4px rgba(99,102,241,.4)}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-700);cursor:pointer}
+.checkbox-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-item{background:var(--gray-50);border:1px solid var(--gray-100);border-radius:8px;padding:10px 12px}
+.stat-label{font-size:11px;color:var(--gray-400);font-weight:500;margin-bottom:2px}
+.stat-value{font-size:15px;font-weight:700;color:var(--gray-800)}
+.stat-value.green{color:var(--success)}.stat-value.red{color:var(--danger)}.stat-value.orange{color:var(--warning)}.stat-value.blue{color:var(--primary)}
+.table-section{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#fff}
+.table-header-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--gray-200);flex-shrink:0}
+.table-title{font-size:13px;font-weight:600;color:var(--gray-700)}
+.btn-secondary{background:#fff;color:var(--gray-700);border:1px solid var(--gray-300);padding:6px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s ease;display:flex;align-items:center;gap:4px}
+.btn-secondary:hover{background:var(--gray-50);border-color:var(--gray-400)}
+.table-wrapper{flex:1;overflow:auto}
+.table-wrapper::-webkit-scrollbar{width:8px;height:8px}
+.table-wrapper::-webkit-scrollbar-track{background:var(--gray-100)}
+.table-wrapper::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{position:sticky;top:0;background:var(--gray-50);border-bottom:2px solid var(--gray-200);padding:10px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);white-space:nowrap;z-index:2}
+tbody tr{border-bottom:1px solid var(--gray-100);transition:background .15s ease}
+tbody tr:hover{background:var(--gray-50)}
+tbody tr.row-packed{background:#f0fdf4}
+tbody tr.row-unpacked{background:#fef2f2}
+tbody td{padding:6px 8px;vertical-align:middle}
+.cell-input{width:100%;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;color:var(--gray-800);outline:none;transition:all .2s ease;background:transparent}
+.cell-input:hover{border-color:var(--gray-400)}
+.cell-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.cell-input[type=number]{text-align:right}
+td .cell-checkbox{width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-red{background:#fee2e2;color:#991b1b}
+.btn-delete{background:none;border:none;color:var(--gray-400);cursor:pointer;padding:4px 8px;border-radius:4px;opacity:0;transition:all .15s ease;font-size:16px}
+tr:hover .btn-delete{opacity:1}
+.btn-delete:hover{background:#fee2e2;color:var(--danger)}
+.bottom-section{height:45%;display:flex;flex-direction:column;position:relative;background:#fafafa}
+.viz-header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:#fff;border-bottom:1px solid var(--gray-200);flex-shrink:0;z-index:5}
+.viz-title{font-size:13px;font-weight:600;color:var(--gray-700)}
+.viz-controls{display:flex;gap:6px}
+.btn-icon{background:#fff;border:1px solid var(--gray-200);color:var(--gray-600);padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;gap:4px}
+.btn-icon:hover{background:var(--gray-50);border-color:var(--gray-300)}
+.btn-icon.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+#canvas-container{flex:1;position:relative;overflow:hidden}
+#canvas-container canvas{display:block}
+#legend-panel{position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.92);border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;font-size:11px;z-index:10;box-shadow:var(--shadow);display:none;max-width:220px}
+#legend-panel .legend-title{font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);margin-bottom:6px}
+.legend-item{display:flex;align-items:center;gap:8px;padding:2px 0;color:var(--gray-700)}
+.legend-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
+#dim-labels{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);border:1px solid var(--gray-200);border-radius:8px;padding:8px 12px;font-size:11px;z-index:10;box-shadow:var(--shadow);display:none;color:var(--gray-600)}
+#dim-labels b{font-weight:600;color:var(--gray-800)}
+#tooltip{position:fixed;display:none;background:rgba(0,0,0,.9);color:#fff;padding:10px 14px;border-radius:6px;font-size:12px;line-height:1.6;z-index:1000;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:280px}
+#tooltip .tip-name{font-size:14px;font-weight:700;margin-bottom:4px}
+#tooltip .tip-divider{height:1px;background:rgba(255,255,255,.2);margin:4px 0}
+#loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.85);display:none;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
+#loading-overlay.active{display:flex}
+.spinner{width:36px;height:36px;border:3px solid var(--gray-200);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:var(--gray-600);font-weight:500}
+.loading-progress{font-size:22px;font-weight:700;color:var(--primary)}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <div class="toolbar-left">
+    <span class="toolbar-title">📦 3D装箱优化系统</span>
+    <span class="toolbar-sub">Extreme Points Algorithm</span>
+  </div>
+  <button class="btn-primary" id="btn-pack" onclick="startPacking()"><span>▶</span> 开始装箱</button>
+</div>
+<div class="main-content">
+  <div class="top-section">
+    <div class="config-panel">
+      <div class="config-group">
+        <div class="section-title">容器配置</div>
+        <label class="config-label">容器类型</label>
+        <select class="config-select" id="container-type">
+          <option value="40HC">40HC — 1203×269×235 cm</option>
+          <option value="40GP">40GP — 1203×239×235 cm</option>
+          <option value="20GP">20GP — 589×239×235 cm</option>
+        </select>
+      </div>
+      <div class="config-group">
+        <label class="config-label">最小支撑率</label>
+        <div class="slider-container">
+          <div class="slider-header">
+            <span style="font-size:11px;color:var(--gray-400)">50%</span>
+            <span class="slider-value" id="support-value">75%</span>
+            <span style="font-size:11px;color:var(--gray-400)">100%</span>
+          </div>
+          <input type="range" id="support-slider" min="50" max="100" step="5" value="75" oninput="document.getElementById('support-value').textContent=this.value+'%'">
+        </div>
+      </div>
+      <div class="config-group">
+        <label class="checkbox-row">
+          <input type="checkbox" id="enable-aggregation" checked> 启用小件聚合
+        </label>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:4px;margin-left:24px;">自动聚合小于容器1/10且数量&gt;20的货物</div>
+      </div>
+      <div id="results-section" style="display:none">
+        <div class="section-title">装载结果</div>
+        <div class="stats-grid">
+          <div class="stat-item"><div class="stat-label">已装载</div><div class="stat-value green" id="stat-packed">—</div></div>
+          <div class="stat-item"><div class="stat-label">未装载</div><div class="stat-value red" id="stat-unpacked">—</div></div>
+          <div class="stat-item"><div class="stat-label">装载率</div><div class="stat-value blue" id="stat-pack-rate">—</div></div>
+          <div class="stat-item"><div class="stat-label">空间利用率</div><div class="stat-value blue" id="stat-space-rate">—</div></div>
+          <div class="stat-item"><div class="stat-label">实重 / 限重</div><div class="stat-value orange" id="stat-weight">—</div></div>
+          <div class="stat-item"><div class="stat-label">重量利用率</div><div class="stat-value blue" id="stat-weight-rate">—</div></div>
+          <div class="stat-item"><div class="stat-label">计算耗时</div><div class="stat-value" id="stat-time">—</div></div>
+          <div class="stat-item"><div class="stat-label">重心偏移</div><div class="stat-value" id="stat-cog">—</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="table-section">
+      <div class="table-header-bar">
+        <span class="table-title">货物清单</span>
+        <button class="btn-secondary" onclick="addItemRow()">＋ 添加货物</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr>
+            <th style="width:180px">名称</th><th style="width:100px">长度(cm)</th><th style="width:100px">高度(cm)</th>
+            <th style="width:100px">宽度(cm)</th><th style="width:100px">重量(kg)</th><th style="width:90px">数量</th>
+            <th style="width:90px">堆叠限制</th><th style="width:90px">允许旋转</th><th style="width:140px">状态</th><th style="width:60px"></th>
+          </tr></thead>
+          <tbody id="items-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-section">
+    <div class="viz-header">
+      <span class="viz-title">🎨 3D可视化</span>
+      <div class="viz-controls">
+        <button class="btn-icon" onclick="resetCamera()">🎥 重置视角</button>
+        <button class="btn-icon" id="btn-rotate" onclick="toggleAutoRotate()">⏯️ 自动旋转</button>
+        <button class="btn-icon" onclick="takeScreenshot()">📸 截图</button>
+      </div>
+    </div>
+    <div id="canvas-container">
+      <div id="dim-labels"></div>
+      <div id="legend-panel"><div class="legend-title">货物图例</div><div id="legend-items"></div></div>
+    </div>
+  </div>
+</div>
+<div id="tooltip"><div class="tip-name"></div><div class="tip-divider"></div><div class="tip-details"></div></div>
+<div id="loading-overlay"><div class="spinner"></div><div class="loading-text">正在计算装箱方案...</div><div class="loading-progress" id="loading-progress">0%</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+// =============================================
+// 1. CONSTANTS
+// =============================================
+const CONTAINERS = {
+  '40HC': { length: 1203, height: 269, width: 235, maxWeight: 28500 },
+  '40GP': { length: 1203, height: 239, width: 235, maxWeight: 26000 },
+  '20GP': { length: 589,  height: 239, width: 235, maxWeight: 28000 }
+};
+const ITEM_COLORS = { '重型设备': 0xf59e0b, '长条配件': 0xef4444, '小配件': 0x3b82f6 };
+const DEFAULT_COLOR = 0x8b5cf6;
+const COLOR_PALETTE = [0xf59e0b, 0xef4444, 0x3b82f6, 0x8b5cf6, 0x10b981, 0xec4899, 0x14b8a6, 0xf97316, 0x06b6d4, 0x84cc16];
+const DEFAULT_ITEMS = [
+  { name:"重型设备", length:500, height:100, width:60, weight:3000, quantity:15, stackLimit:1, allowRotate:false },
+  { name:"长条配件", length:100, height:30, width:30, weight:50, quantity:20, stackLimit:5, allowRotate:true },
+  { name:"小配件", length:10, height:10, width:10, weight:1, quantity:100, stackLimit:10, allowRotate:false }
+];
+
+// =============================================
+// 2. GLOBALS
+// =============================================
+let scene, camera, renderer, controls, raycaster, mouse;
+let itemMeshes = [], containerGroup, autoRotate = false, currentContainerDims = null;
+
+// =============================================
+// 3. THREE.JS INIT
+// =============================================
+function initThreeJS() {
+  const el = document.getElementById('canvas-container');
+  const w = el.clientWidth, h = el.clientHeight;
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xfafafa);
+  camera = new THREE.PerspectiveCamera(60, w / h, 1, 50000);
+  camera.position.set(1500, 1000, 1500);
+  renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  el.appendChild(renderer.domElement);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.5);
+  dl.position.set(1000, 1200, 800); dl.castShadow = true; scene.add(dl);
+  const grid = new THREE.GridHelper(2500, 25, 0xe5e7eb, 0xf3f4f6);
+  grid.position.y = -1; scene.add(grid);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.05;
+  controls.minDistance = 100; controls.maxDistance = 15000;
+  raycaster = new THREE.Raycaster(); mouse = new THREE.Vector2();
+  addCoordinateAxes();
+  containerGroup = new THREE.Group(); scene.add(containerGroup);
+  renderer.domElement.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('resize', onResize);
+  (function animate() { requestAnimationFrame(animate); if (autoRotate && containerGroup) containerGroup.rotation.y += 0.003; controls.update(); renderer.render(scene, camera); })();
+}
+
+function makeTextSprite(text, color, fs) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+  const ctx = c.getContext('2d'); ctx.font = 'Bold '+(fs||32)+'px Arial';
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 128, 32);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c) }));
+  s.scale.set(200, 50, 1); return s;
+}
+
+function addCoordinateAxes() {
+  [{c:0xff0000,d:'x',l:'X (长度)',p:[650,0,0]},{c:0x00ff00,d:'y',l:'Y (高度)',p:[0,650,0]},{c:0x0000ff,d:'z',l:'Z (宽度)',p:[0,0,650]}].forEach(a => {
+    const mat = new THREE.MeshBasicMaterial({color:a.c});
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(3,3,600,8), mat);
+    if(a.d==='x'){cyl.rotation.z=-Math.PI/2;cyl.position.set(300,0,0)}
+    else if(a.d==='y'){cyl.position.set(0,300,0)}
+    else{cyl.rotation.x=Math.PI/2;cyl.position.set(0,0,300)}
+    scene.add(cyl);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(8,24,8), mat);
+    if(a.d==='x'){cone.rotation.z=-Math.PI/2;cone.position.set(612,0,0)}
+    else if(a.d==='y'){cone.position.set(0,612,0)}
+    else{cone.rotation.x=Math.PI/2;cone.position.set(0,0,612)}
+    scene.add(cone);
+    const sp = makeTextSprite(a.l, '#'+a.c.toString(16).padStart(6,'0'));
+    sp.position.set(...a.p); scene.add(sp);
+  });
+}
+
+function onResize() {
+  const c = document.getElementById('canvas-container');
+  const w = c.clientWidth, h = c.clientHeight;
+  if(!w||!h) return; camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h);
+}
+
+// =============================================
+// 4. MOUSE / TOOLTIP
+// =============================================
+function onMouseMove(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y = -((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(itemMeshes, false);
+  const tip = document.getElementById('tooltip');
+  if (hits.length > 0) {
+    const d = hits[0].object.userData;
+    if (d && d.name) {
+      tip.style.display = 'block';
+      tip.style.left = (e.clientX+15)+'px'; tip.style.top = (e.clientY+15)+'px';
+      tip.querySelector('.tip-name').textContent = d.name;
+      let html = '尺寸: '+d.origL+'×'+d.origH+'×'+d.origW+' cm<br>重量: '+d.weight+' kg<br>位置: ('+d.x+', '+d.y+', '+d.z+')';
+      if (d.stackLayer !== undefined) html += '<br>堆叠: 第'+d.stackLayer+'层 / 限'+d.stackMax+'层';
+      if (d.aggCount > 1) html += '<br>聚合: '+d.aggCount+'件';
+      tip.querySelector('.tip-details').innerHTML = html;
+      return;
+    }
+  }
+  tip.style.display = 'none';
+}
+
+// =============================================
+// 5. TABLE
+// =============================================
+function createRow(it) {
+  return '<tr><td><input class="cell-input" type="text" value="'+it.name+'" data-field="name"></td>'
+    +'<td><input class="cell-input" type="number" min="1" value="'+it.length+'" data-field="length"></td>'
+    +'<td><input class="cell-input" type="number" min="1" value="'+it.height+'" data-field="height"></td>'
+    +'<td><input class="cell-input" type="number" min="1" value="'+it.width+'" data-field="width"></td>'
+    +'<td><input class="cell-input" type="number" min="0.1" step="0.1" value="'+it.weight+'" data-field="weight"></td>'
+    +'<td><input class="cell-input" type="number" min="1" value="'+it.quantity+'" data-field="quantity"></td>'
+    +'<td><input class="cell-input" type="number" min="1" value="'+it.stackLimit+'" data-field="stackLimit"></td>'
+    +'<td style="text-align:center"><input class="cell-checkbox" type="checkbox" '+(it.allowRotate?'checked':'')+' data-field="allowRotate"></td>'
+    +'<td class="status-cell"></td>'
+    +'<td><button class="btn-delete" onclick="deleteRow(this)" title="删除">✕</button></td></tr>';
+}
+function initTable() { document.getElementById('items-tbody').innerHTML = DEFAULT_ITEMS.map(createRow).join(''); }
+function addItemRow() { document.getElementById('items-tbody').insertAdjacentHTML('beforeend', createRow({name:"新货物",length:50,height:50,width:50,weight:10,quantity:1,stackLimit:5,allowRotate:true})); }
+function deleteRow(btn) { const tb=document.getElementById('items-tbody'); if(tb.rows.length>1) btn.closest('tr').remove(); }
+function readTableData() {
+  const items = [];
+  document.querySelectorAll('#items-tbody tr').forEach(row => {
+    const it = {};
+    row.querySelectorAll('.cell-input,.cell-checkbox').forEach(inp => {
+      const f=inp.dataset.field;
+      if(f==='allowRotate') it[f]=inp.checked;
+      else if(f==='name') it[f]=inp.value||'未命名';
+      else it[f]=Math.abs(parseFloat(inp.value))||1;
+    });
+    if(it.length>0&&it.height>0&&it.width>0&&it.weight>0&&it.quantity>0) {
+      it.quantity=Math.round(it.quantity); it.stackLimit=Math.round(it.stackLimit)||1; items.push(it);
+    }
+  });
+  return items;
+}
+function updateTableStatus(res) {
+  document.querySelectorAll('#items-tbody tr').forEach(row => {
+    const ni=row.querySelector('[data-field="name"]'), sc=row.querySelector('.status-cell');
+    if(!ni||!sc) return;
+    const r=res[ni.value]; row.classList.remove('row-packed','row-unpacked');
+    if(!r){sc.innerHTML='';return;}
+    let h='';
+    if(r.packed>0) h+='<span class="badge badge-green">已装载 '+r.packed+'</span> ';
+    if(r.unpacked>0) h+='<span class="badge badge-red">未装载 '+r.unpacked+'</span>';
+    sc.innerHTML=h;
+    if(r.unpacked===0) row.classList.add('row-packed');
+    else if(r.packed===0) row.classList.add('row-unpacked');
+  });
+}
+
+// =============================================
+// 6. PACKING ALGORITHM — Extreme Points + Stack Limit
+// =============================================
+class ExtremePointsPacker {
+  constructor(cont, minSupport) {
+    this.cL=cont.length; this.cH=cont.height; this.cW=cont.width;
+    this.maxW=cont.maxWeight; this.minSup=minSupport/100;
+    this.eps=[{x:0,y:0,z:0}]; this.packed=[]; this.totalW=0;
+  }
+
+  canPlace(ep, l, h, w) {
+    if(ep.x+l>this.cL+0.01||ep.y+h>this.cH+0.01||ep.z+w>this.cW+0.01) return false;
+    for(const p of this.packed) {
+      if(!(ep.x+l<=p.x+0.01||ep.x>=p.x+p.l-0.01||ep.y+h<=p.y+0.01||ep.y>=p.y+p.h-0.01||ep.z+w<=p.z+0.01||ep.z>=p.z+p.w-0.01))
+        return false;
+    }
+    return true;
+  }
+
+  checkSupport(x,y,z,l,w) {
+    if(y<0.1) return true;
+    const ba=l*w; let sa=0;
+    for(const p of this.packed) {
+      if(Math.abs(p.y+p.h-y)<0.1) {
+        sa+=Math.max(0,Math.min(x+l,p.x+p.l)-Math.max(x,p.x))*Math.max(0,Math.min(z+w,p.z+p.w)-Math.max(z,p.z));
+      }
+    }
+    return (sa/ba)>=this.minSup;
+  }
+
+  // Stack limit check: count same-type items stacked directly below in a continuous column
+  checkStackLimit(ep, item) {
+    const limit = item.stackLimit;
+    if(!limit || limit <= 0) return true;
+
+    const tk = item._typeKey;
+    const x1=ep.x, x2=ep.x+item.length, z1=ep.z, z2=ep.z+item.width;
+    const footprint = item.length * item.width;
+
+    // Gather same-type items below, sorted top-down
+    const below = [];
+    for(const p of this.packed) {
+      if(p._typeKey !== tk) continue;
+      if(p.y + p.h > ep.y + 0.1) continue; // not below
+      // Check XZ overlap > 30% of smaller footprint
+      const ox = Math.max(0, Math.min(x2, p.x+p.l) - Math.max(x1, p.x));
+      const oz = Math.max(0, Math.min(z2, p.z+p.w) - Math.max(z1, p.z));
+      const oa = ox * oz;
+      const minFP = Math.min(footprint, p.l * p.w);
+      if(oa > minFP * 0.3) below.push(p);
+    }
+
+    // Trace continuous stack downward
+    below.sort((a,b) => (b.y+b.h) - (a.y+a.h));
+    let count = 0, curBottom = ep.y;
+    for(const b of below) {
+      if(Math.abs(b.y + b.h - curBottom) < 1.0) {
+        count++;
+        curBottom = b.y;
+      }
+    }
+    return (count + 1) <= limit;
+  }
+
+  getStackLayer(ep, item) {
+    const tk = item._typeKey;
+    const x1=ep.x, x2=ep.x+item.length, z1=ep.z, z2=ep.z+item.width;
+    const footprint = item.length * item.width;
+    const below = [];
+    for(const p of this.packed) {
+      if(p._typeKey !== tk) continue;
+      if(p.y + p.h > ep.y + 0.1) continue;
+      const ox = Math.max(0, Math.min(x2, p.x+p.l) - Math.max(x1, p.x));
+      const oz = Math.max(0, Math.min(z2, p.z+p.w) - Math.max(z1, p.z));
+      if(ox * oz > Math.min(footprint, p.l * p.w) * 0.3) below.push(p);
+    }
+    below.sort((a,b) => (b.y+b.h) - (a.y+a.h));
+    let count = 0, cb = ep.y;
+    for(const b of below) { if(Math.abs(b.y+b.h-cb)<1.0){count++;cb=b.y;} }
+    return count + 1;
+  }
+
+  isDom(a,b) { return a.x>=b.x&&a.y>=b.y&&a.z>=b.z&&(a.x>b.x||a.y>b.y||a.z>b.z); }
+
+  place(item, ep) {
+    const sl = this.getStackLayer(ep, item);
+    this.packed.push({
+      name:item.name, l:item.length, h:item.height, w:item.width, wt:item.weight,
+      x:ep.x, y:ep.y, z:ep.z,
+      isAgg:item.isAggregated||false, aggCnt:item.aggregatedCount||1,
+      _typeKey:item._typeKey, stackLimit:item.stackLimit, stackLayer:sl,
+      origL:item.origLength||item.length, origH:item.origHeight||item.height, origW:item.origWidth||item.width
+    });
+    this.totalW += item.weight;
+    this.eps = this.eps.filter(p => p !== ep);
+    const news = [
+      {x:ep.x+item.length,y:ep.y,z:ep.z},
+      {x:ep.x,y:ep.y+item.height,z:ep.z},
+      {x:ep.x,y:ep.y,z:ep.z+item.width}
+    ];
+    for(const n of news) {
+      if(n.x>this.cL+0.01||n.y>this.cH+0.01||n.z>this.cW+0.01) continue;
+      let dom=false;
+      for(const e of this.eps){if(this.isDom(n,e)){dom=true;break;}}
+      if(!dom){this.eps=this.eps.filter(e=>!this.isDom(e,n));this.eps.push(n);}
+    }
+    this.eps.sort((a,b) => a.y-b.y||a.x-b.x||a.z-b.z);
+  }
+
+  tryPlace(item) {
+    if(this.totalW + item.weight > this.maxW) return false;
+    // Original orientation
+    for(const ep of [...this.eps]) {
+      if(this.canPlace(ep, item.length, item.height, item.width)) {
+        if(this.checkSupport(ep.x, ep.y, ep.z, item.length, item.width)) {
+          if(this.checkStackLimit(ep, item)) {
+            this.place(item, ep); return true;
+          }
+        }
+      }
+    }
+    // Rotated (swap L and W)
+    if(item.allowRotate) {
+      const rot = {...item, length:item.width, width:item.length};
+      for(const ep of [...this.eps]) {
+        if(this.canPlace(ep, rot.length, rot.height, rot.width)) {
+          if(this.checkSupport(ep.x, ep.y, ep.z, rot.length, rot.width)) {
+            if(this.checkStackLimit(ep, rot)) {
+              this.place(rot, ep); return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+}
+
+// =============================================
+// 7. AGGREGATION & SORTING
+// =============================================
+function aggregateSmallItems(items, cd) {
+  const groups = {};
+  items.forEach(it => { const k=it._typeKey; if(!groups[k])groups[k]=[]; groups[k].push(it); });
+  const res = [];
+  for(const k of Object.keys(groups)) {
+    const g=groups[k], s=g[0];
+    const isSmall = s.length<cd.length/10 && s.height<cd.height/10 && s.width<cd.width/10 && g.length>20;
+    if(isSmall) {
+      const fx=Math.floor(cd.length/s.length), fz=Math.floor(cd.width/s.width), ipl=fx*fz;
+      if(ipl>1) {
+        const nb=Math.floor(g.length/ipl), rem=g.length%ipl;
+        for(let i=0;i<nb;i++) res.push({
+          name:s.name,length:s.length*fx,height:s.height,width:s.width*fz,weight:s.weight*ipl,
+          stackLimit:s.stackLimit,allowRotate:false,isAggregated:true,aggregatedCount:ipl,
+          _typeKey:k, origLength:s.length, origHeight:s.height, origWidth:s.width
+        });
+        for(let i=0;i<rem;i++) res.push({...g[nb*ipl+i],isAggregated:false,aggregatedCount:1});
+      } else g.forEach(x=>res.push({...x,isAggregated:false,aggregatedCount:1}));
+    } else g.forEach(x=>res.push({...x,isAggregated:false,aggregatedCount:1}));
+  }
+  return res;
+}
+
+function sortItems(items, enableAgg, cd) {
+  let exp = [];
+  items.forEach(it => {
+    const tk = it.name+'_'+it.length+'_'+it.height+'_'+it.width;
+    for(let i=0;i<it.quantity;i++) exp.push({
+      name:it.name,length:it.length,height:it.height,width:it.width,weight:it.weight,
+      stackLimit:it.stackLimit,allowRotate:it.allowRotate,
+      isAggregated:false,aggregatedCount:1,_typeKey:tk,
+      origLength:it.length,origHeight:it.height,origWidth:it.width
+    });
+  });
+  exp.sort((a,b) => {
+    const ma=Math.max(a.length,a.height,a.width), mb=Math.max(b.length,b.height,b.width);
+    const mA=ma>=50&&ma<=500, mB=mb>=50&&mb<=500;
+    if(mA&&!mB) return -1; if(!mA&&mB) return 1;
+    return (b.length*b.height*b.width)-(a.length*a.height*a.width);
+  });
+  if(enableAgg) {
+    exp = aggregateSmallItems(exp, cd);
+    exp.sort((a,b) => {
+      if(a.isAggregated&&!b.isAggregated) return 1;
+      if(!a.isAggregated&&b.isAggregated) return -1;
+      return (b.length*b.height*b.width)-(a.length*a.height*a.width);
+    });
+  }
+  return exp;
+}
+
+function calcCoG(packed, cd) {
+  let cx=0,cz=0,tw=0;
+  packed.forEach(p=>{cx+=(p.x+p.l/2)*p.wt;cz+=(p.z+p.w/2)*p.wt;tw+=p.wt;});
+  if(!tw)return 0;cx/=tw;cz/=tw;
+  const ox=Math.abs(cx-cd.length/2)/(cd.length/2)*100;
+  const oz=Math.abs(cz-cd.width/2)/(cd.width/2)*100;
+  return Math.sqrt(ox*ox+oz*oz);
+}
+
+// =============================================
+// 8. 3D RENDERING — Multi-Size Optimized
+// =============================================
+function getColor(name, idx) { return ITEM_COLORS[name] || COLOR_PALETTE[idx % COLOR_PALETTE.length] || DEFAULT_COLOR; }
+
+function clearScene() {
+  while(containerGroup.children.length>0) {
+    const c=containerGroup.children[0];
+    if(c.geometry)c.geometry.dispose();
+    if(c.material){if(Array.isArray(c.material))c.material.forEach(m=>m.dispose());else c.material.dispose();}
+    containerGroup.remove(c);
+  }
+  itemMeshes=[]; containerGroup.rotation.y=0;
+}
+
+function renderContainer(d) {
+  // Wireframe box
+  const geo=new THREE.BoxGeometry(d.length,d.height,d.width);
+  const line=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x9ca3af}));
+  line.position.set(d.length/2,d.height/2,d.width/2);
+  containerGroup.add(line);
+  // Floor plane
+  const fg=new THREE.PlaneGeometry(d.length,d.width);
+  const fm=new THREE.Mesh(fg,new THREE.MeshBasicMaterial({color:0xe5e7eb,transparent:true,opacity:0.15,side:THREE.DoubleSide}));
+  fm.rotation.x=-Math.PI/2; fm.position.set(d.length/2,.5,d.width/2);
+  containerGroup.add(fm);
+  // Dimension labels on container
+  const lc='#6b7280';
+  const ls=makeTextSprite(d.length+' cm',lc,28); ls.scale.set(180,45,1); ls.position.set(d.length/2,-30,d.width+40); containerGroup.add(ls);
+  const hs=makeTextSprite(d.height+' cm',lc,28); hs.scale.set(160,40,1); hs.position.set(-50,d.height/2,d.width+40); containerGroup.add(hs);
+  const ws=makeTextSprite(d.width+' cm',lc,28); ws.scale.set(160,40,1); ws.position.set(-50,-30,d.width/2); containerGroup.add(ws);
+}
+
+function renderItems(packed, cd) {
+  const names=[...new Set(packed.map(i=>i.name))];
+  const ncm={}; names.forEach((n,i)=>{ncm[n]=i;});
+
+  packed.forEach(item => {
+    const color = getColor(item.name, ncm[item.name]);
+    const minD = Math.min(item.l, item.h, item.w);
+
+    const geo = new THREE.BoxGeometry(item.l - 0.5, item.h - 0.5, item.w - 0.5);
+    const mat = new THREE.MeshStandardMaterial({ color, metalness:0.15, roughness:0.75 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(item.x+item.l/2, item.y+item.h/2, item.z+item.w/2);
+    mesh.castShadow=true; mesh.receiveShadow=true;
+
+    mesh.userData = {
+      name:item.name, origL:item.origL, origH:item.origH, origW:item.origW,
+      weight:item.wt, x:Math.round(item.x), y:Math.round(item.y), z:Math.round(item.z),
+      aggCount:item.aggCnt||1, stackLayer:item.stackLayer, stackMax:item.stackLimit
+    };
+    containerGroup.add(mesh); itemMeshes.push(mesh);
+
+    // Edges: skip for very small items to reduce clutter, thinner for medium
+    if(minD > 5) {
+      const opacity = minD > 40 ? 0.25 : (minD > 15 ? 0.18 : 0.1);
+      const el = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geo),
+        new THREE.LineBasicMaterial({color:0x000000,transparent:true,opacity})
+      );
+      el.position.copy(mesh.position);
+      containerGroup.add(el);
+    }
+  });
+
+  containerGroup.position.set(-cd.length/2, 0, -cd.width/2);
+  updateLegend(names, ncm);
+  updateDimLabels(cd);
+  autoFitCamera(cd);
+}
+
+function autoFitCamera(d) {
+  const maxD = Math.max(d.length, d.height, d.width);
+  const dist = maxD * 1.5;
+  camera.position.set(dist*0.9, dist*0.55, dist*0.9);
+  controls.target.set(0, d.height*0.3, 0);
+  camera.near=1; camera.far=maxD*10;
+  camera.updateProjectionMatrix(); controls.update();
+}
+
+function updateLegend(names, ncm) {
+  const p=document.getElementById('legend-panel'), c=document.getElementById('legend-items');
+  if(!names.length){p.style.display='none';return;}
+  p.style.display='block';
+  c.innerHTML=names.map(n=>{
+    const hex='#'+getColor(n,ncm[n]).toString(16).padStart(6,'0');
+    return '<div class="legend-item"><div class="legend-swatch" style="background:'+hex+'"></div><span>'+n+'</span></div>';
+  }).join('');
+}
+function updateDimLabels(d) {
+  const el=document.getElementById('dim-labels'); el.style.display='block';
+  el.innerHTML='容器: <b>'+d.length+'</b>×<b>'+d.height+'</b>×<b>'+d.width+'</b> cm | 限重: <b>'+d.maxWeight+'</b> kg';
+}
+
+// =============================================
+// 9. MAIN
+// =============================================
+async function startPacking() {
+  const btn=document.getElementById('btn-pack'); btn.disabled=true;
+  const ov=document.getElementById('loading-overlay'); ov.classList.add('active');
+  const pg=document.getElementById('loading-progress'); pg.textContent='0%';
+  const t0=performance.now();
+  try {
+    const td=readTableData();
+    if(!td.length){alert('请添加货物');return;}
+    const ct=document.getElementById('container-type').value;
+    const cont=CONTAINERS[ct];
+    const sr=parseInt(document.getElementById('support-slider').value);
+    const ea=document.getElementById('enable-aggregation').checked;
+    const sorted=sortItems(td, ea, cont);
+    const total=sorted.length;
+    const packer=new ExtremePointsPacker(cont, sr);
+    const unpacked=[];
+    for(let i=0;i<sorted.length;i++){
+      if(!packer.tryPlace(sorted[i])) unpacked.push(sorted[i]);
+      if(i%50===0||i===sorted.length-1){pg.textContent=Math.round((i+1)/total*100)+'%';await new Promise(r=>setTimeout(r,0));}
+    }
+    const elapsed=((performance.now()-t0)/1000).toFixed(2);
+    let pc=0; packer.packed.forEach(p=>pc+=(p.aggCnt||1));
+    let uc=0; unpacked.forEach(u=>uc+=(u.aggregatedCount||1));
+    const ti=pc+uc;
+    const pr=ti>0?(pc/ti*100).toFixed(1):'0.0';
+    const cv=cont.length*cont.height*cont.width;
+    let uv=0; packer.packed.forEach(p=>uv+=p.l*p.h*p.w);
+    const spr=(uv/cv*100).toFixed(1);
+    const wr=(packer.totalW/cont.maxWeight*100).toFixed(1);
+    const cog=calcCoG(packer.packed, cont).toFixed(1);
+
+    document.getElementById('results-section').style.display='block';
+    document.getElementById('stat-packed').textContent=pc;
+    document.getElementById('stat-unpacked').textContent=uc;
+    document.getElementById('stat-pack-rate').textContent=pr+'%';
+    document.getElementById('stat-space-rate').textContent=spr+'%';
+    document.getElementById('stat-weight').textContent=Math.round(packer.totalW)+' / '+cont.maxWeight+' kg';
+    document.getElementById('stat-weight-rate').textContent=wr+'%';
+    document.getElementById('stat-time').textContent=elapsed+'s';
+    document.getElementById('stat-cog').textContent=cog+'%';
+
+    const sm={};
+    packer.packed.forEach(p=>{if(!sm[p.name])sm[p.name]={packed:0,unpacked:0};sm[p.name].packed+=(p.aggCnt||1);});
+    unpacked.forEach(u=>{if(!sm[u.name])sm[u.name]={packed:0,unpacked:0};sm[u.name].unpacked+=(u.aggregatedCount||1);});
+    updateTableStatus(sm);
+
+    clearScene(); currentContainerDims=cont;
+    renderContainer(cont); renderItems(packer.packed, cont);
+  } catch(err){console.error(err);alert('装箱计算出错: '+err.message);}
+  finally{ov.classList.remove('active');btn.disabled=false;}
+}
+
+// =============================================
+// 10. UTILS
+// =============================================
+function resetCamera(){ autoFitCamera(currentContainerDims||CONTAINERS['40HC']); }
+function toggleAutoRotate(){ autoRotate=!autoRotate; document.getElementById('btn-rotate').classList.toggle('active',autoRotate); }
+function takeScreenshot(){ renderer.render(scene,camera); const a=document.createElement('a'); a.download='packing-'+Date.now()+'.png'; a.href=renderer.domElement.toDataURL('image/png'); a.click(); }
+
+// =============================================
+// 11. INIT
+// =============================================
+window.addEventListener('load', () => { initTable(); initThreeJS(); });
+</script>
+</body>
+</html>
