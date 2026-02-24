@@ -4,12 +4,98 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>3D Bin Packing Optimizer</title>
-<link rel="stylesheet" href="css/style.css">
+<style>
+:root{--primary:#6366f1;--primary-hover:#4f46e5;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;--gray-400:#9ca3af;--gray-500:#6b7280;--gray-600:#4b5563;--gray-700:#374151;--gray-800:#1f2937;--gray-900:#111827;--shadow:0 1px 3px 0 rgb(0 0 0/0.1);--shadow-md:0 4px 6px -1px rgb(0 0 0/0.1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;background:var(--gray-50);color:var(--gray-800);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.toolbar{height:56px;background:#fff;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0;box-shadow:var(--shadow);z-index:10}
+.toolbar-left{display:flex;align-items:baseline;gap:10px}
+.toolbar-title{font-size:20px;font-weight:700;color:var(--gray-900)}
+.toolbar-sub{font-size:12px;font-weight:500;color:var(--gray-400)}
+.btn-primary{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer;box-shadow:var(--shadow);transition:all .2s ease;display:flex;align-items:center;gap:6px}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.4)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.top-section{height:55%;display:flex;border-bottom:1px solid var(--gray-200);overflow:hidden}
+.config-panel{width:300px;flex-shrink:0;background:#fff;border-right:1px solid var(--gray-200);overflow-y:auto;padding:20px}
+.config-panel::-webkit-scrollbar{width:8px}
+.config-panel::-webkit-scrollbar-track{background:var(--gray-100)}
+.config-panel::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:4px}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-400);margin-bottom:14px}
+.config-group{margin-bottom:24px}
+.config-label{display:block;font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:6px}
+.config-select{width:100%;padding:8px 10px;border:1px solid var(--gray-300);border-radius:6px;font-size:13px;color:var(--gray-800);background:#fff;outline:none;transition:all .2s ease}
+.config-select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.slider-container{margin-top:4px}
+.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.slider-value{font-size:13px;font-weight:600;color:var(--primary);background:rgba(99,102,241,.08);padding:2px 8px;border-radius:4px}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--gray-200);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--primary);cursor:pointer;box-shadow:0 1px 4px rgba(99,102,241,.4)}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-700);cursor:pointer}
+.checkbox-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-item{background:var(--gray-50);border:1px solid var(--gray-100);border-radius:8px;padding:10px 12px}
+.stat-label{font-size:11px;color:var(--gray-400);font-weight:500;margin-bottom:2px}
+.stat-value{font-size:15px;font-weight:700;color:var(--gray-800)}
+.stat-value.green{color:var(--success)}.stat-value.red{color:var(--danger)}.stat-value.orange{color:var(--warning)}.stat-value.blue{color:var(--primary)}
+.table-section{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#fff}
+.table-header-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--gray-200);flex-shrink:0}
+.table-title{font-size:13px;font-weight:600;color:var(--gray-700)}
+.btn-secondary{background:#fff;color:var(--gray-700);border:1px solid var(--gray-300);padding:6px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s ease;display:flex;align-items:center;gap:4px}
+.btn-secondary:hover{background:var(--gray-50);border-color:var(--gray-400)}
+.table-wrapper{flex:1;overflow:auto}
+.table-wrapper::-webkit-scrollbar{width:8px;height:8px}
+.table-wrapper::-webkit-scrollbar-track{background:var(--gray-100)}
+.table-wrapper::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{position:sticky;top:0;background:var(--gray-50);border-bottom:2px solid var(--gray-200);padding:10px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);white-space:nowrap;z-index:2}
+tbody tr{border-bottom:1px solid var(--gray-100);transition:background .15s ease}
+tbody tr:hover{background:var(--gray-50)}
+tbody tr.row-packed{background:#f0fdf4}
+tbody tr.row-unpacked{background:#fef2f2}
+tbody td{padding:6px 8px;vertical-align:middle}
+.cell-input{width:100%;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;color:var(--gray-800);outline:none;transition:all .2s ease;background:transparent}
+.cell-input:hover{border-color:var(--gray-400)}
+.cell-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.cell-input[type=number]{text-align:right}
+td .cell-checkbox{width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-red{background:#fee2e2;color:#991b1b}
+.btn-delete{background:none;border:none;color:var(--gray-400);cursor:pointer;padding:4px 8px;border-radius:4px;opacity:0;transition:all .15s ease;font-size:16px}
+tr:hover .btn-delete{opacity:1}
+.btn-delete:hover{background:#fee2e2;color:var(--danger)}
+.bottom-section{height:45%;display:flex;flex-direction:column;position:relative;background:#fafafa}
+.viz-header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:#fff;border-bottom:1px solid var(--gray-200);flex-shrink:0;z-index:5}
+.viz-title{font-size:13px;font-weight:600;color:var(--gray-700)}
+.viz-controls{display:flex;gap:6px}
+.btn-icon{background:#fff;border:1px solid var(--gray-200);color:var(--gray-600);padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;gap:4px}
+.btn-icon:hover{background:var(--gray-50);border-color:var(--gray-300)}
+.btn-icon.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+#canvas-container{flex:1;position:relative;overflow:hidden}
+#canvas-container canvas{display:block}
+#legend-panel{position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.92);border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;font-size:11px;z-index:10;box-shadow:var(--shadow);display:none;max-width:220px}
+#legend-panel .legend-title{font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);margin-bottom:6px}
+.legend-item{display:flex;align-items:center;gap:8px;padding:2px 0;color:var(--gray-700)}
+.legend-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
+#dim-labels{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);border:1px solid var(--gray-200);border-radius:8px;padding:8px 12px;font-size:11px;z-index:10;box-shadow:var(--shadow);display:none;color:var(--gray-600)}
+#dim-labels b{font-weight:600;color:var(--gray-800)}
+#tooltip{position:fixed;display:none;background:rgba(0,0,0,.9);color:#fff;padding:10px 14px;border-radius:6px;font-size:12px;line-height:1.6;z-index:1000;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:280px}
+#tooltip .tip-name{font-size:14px;font-weight:700;margin-bottom:4px}
+#tooltip .tip-divider{height:1px;background:rgba(255,255,255,.2);margin:4px 0}
+#loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.85);display:none;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
+#loading-overlay.active{display:flex}
+.spinner{width:36px;height:36px;border:3px solid var(--gray-200);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:var(--gray-600);font-weight:500}
+.loading-progress{font-size:22px;font-weight:700;color:var(--primary)}
+</style>
 </head>
 <body>
 <div class="toolbar">
   <div class="toolbar-left">
-    <a href="/" style="text-decoration:none;color:#6b7280;font-size:13px;margin-right:8px;padding:4px 8px;border-radius:4px;transition:all .15s" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">← Tools</a><span class="toolbar-title">📦 3D Bin Packing</span>
+    <a href="/" style="text-decoration:none;color:#6b7280;font-size:13px;margin-right:8px;padding:4px 8px;border-radius:4px;transition:all .15s" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">← Tools</a><span class="toolbar-title">📦 3D Bin Packing Optimizer</span>
     <span class="toolbar-sub">Extreme Points Algorithm</span>
   </div>
   <button class="btn-primary" id="btn-pack" onclick="startPacking()"><span>▶</span> Start Packing</button>
@@ -39,9 +125,9 @@
       </div>
       <div class="config-group">
         <label class="checkbox-row">
-          <input type="checkbox" id="enable-aggregation" checked> Enable Aggregation
+          <input type="checkbox" id="enable-aggregation" checked> Enable Small Item Aggregation
         </label>
-        <div style="font-size:11px;color:var(--gray-400);margin-top:4px;margin-left:24px;">Auto-aggregate items &lt;1/10 container &amp; qty &gt;20</div>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:4px;margin-left:24px;">Auto-aggregate items smaller than 1/10 of container &amp; qty &gt; 20</div>
       </div>
       <div id="results-section" style="display:none">
         <div class="section-title">Packing Results</div>
@@ -63,11 +149,14 @@
         <button class="btn-secondary" onclick="addItemRow()">＋ Add Item</button>
       </div>
       <div class="table-wrapper">
-        <table><thead><tr>
-          <th style="width:180px">Name</th><th style="width:100px">Length(cm)</th><th style="width:100px">Height(cm)</th>
-          <th style="width:100px">Width(cm)</th><th style="width:100px">Weight(kg)</th><th style="width:90px">Qty</th>
-          <th style="width:90px">Stack Limit</th><th style="width:90px">Rotation</th><th style="width:140px">Status</th><th style="width:60px"></th>
-        </tr></thead><tbody id="items-tbody"></tbody></table>
+        <table>
+          <thead><tr>
+            <th style="width:180px">Name</th><th style="width:100px">Length(cm)</th><th style="width:100px">Height(cm)</th>
+            <th style="width:100px">Width(cm)</th><th style="width:100px">Weight(kg)</th><th style="width:90px">Qty</th>
+            <th style="width:90px">Stack Limit</th><th style="width:90px">Rotation</th><th style="width:140px">Status</th><th style="width:60px"></th>
+          </tr></thead>
+          <tbody id="items-tbody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -75,9 +164,9 @@
     <div class="viz-header">
       <span class="viz-title">🎨 3D Visualization</span>
       <div class="viz-controls">
-        <button class="btn-icon" onclick="Viz.resetCamera()">🎥 Reset View</button>
-        <button class="btn-icon" id="btn-rotate" onclick="(function(){const a=Viz.toggleRotate();document.getElementById('btn-rotate').classList.toggle('active',a)})()">⏯️ Auto Rotate</button>
-        <button class="btn-icon" onclick="Viz.screenshot()">📸 Screenshot</button>
+        <button class="btn-icon" onclick="resetCamera()">🎥 Reset View</button>
+        <button class="btn-icon" id="btn-rotate" onclick="toggleAutoRotate()">⏯️ Auto Rotate</button>
+        <button class="btn-icon" onclick="takeScreenshot()">📸 Screenshot</button>
       </div>
     </div>
     <div id="canvas-container">
@@ -87,7 +176,7 @@
   </div>
 </div>
 <div id="tooltip"><div class="tip-name"></div><div class="tip-divider"></div><div class="tip-details"></div></div>
-<div id="loading-overlay"><div class="spinner"></div><div class="loading-text">Calculating packing solution...</div></div>
+<div id="loading-overlay"><div class="spinner"></div><div class="loading-text">Calculating packing solution...</div><div class="loading-progress" id="loading-progress">0%</div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="js/api.js"></script>
