@@ -1,6 +1,34 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "packing/api/pack.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "pdf-to-excel/api/convert.py",
+      "use": "@vercel/python"
+    }
+  ],
   "rewrites": [
-    { "source": "/toolverse/packing", "destination": "/toolverse/packing/index.html" }
+    { "source": "/api/pack", "destination": "/packing/api/pack" },
+    { "source": "/api/pdf/convert", "destination": "/pdf-to-excel/api/convert" },
+    { "source": "/api/pdf/download", "destination": "/pdf-to-excel/api/convert" },
+    { "source": "/api/pdf/rate-limit", "destination": "/pdf-to-excel/api/convert" },
+
+    { "source": "/packing", "destination": "/packing/public/packing/index.html" },
+    { "source": "/packing/", "destination": "/packing/public/packing/index.html" },
+    { "source": "/pdf-to-excel", "destination": "/pdf-to-excel/frontend/index.html" },
+    { "source": "/pdf-to-excel/", "destination": "/pdf-to-excel/frontend/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
+    }
   ]
 }

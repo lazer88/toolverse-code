@@ -159,6 +159,7 @@ body::before{content:'';position:fixed;inset:0;opacity:.35;pointer-events:none;z
 <body>
 
 <nav class="nav"><div class="nav-inner">
+  <a href="/" style="color:var(--text-2);text-decoration:none;font-size:13px;font-weight:500;margin-right:8px">← Tools</a>
   <a href="#" class="nav-brand"><div class="nav-logo">TE</div><div class="nav-title">TableExtract</div></a>
 </div></nav>
 
@@ -240,7 +241,7 @@ body::before{content:'';position:fixed;inset:0;opacity:.35;pointer-events:none;z
 // ═══════════════════════════════════════════════════════
 //  CONFIG — Change this to your backend URL
 // ═══════════════════════════════════════════════════════
-const API_BASE = window.TABLE_EXTRACT_API || '/api';
+const API_BASE = window.TABLE_EXTRACT_API || '/api/pdf';
 
 // ═══════════════════════════════════════════════════════
 //  UI LOGIC
@@ -470,7 +471,7 @@ $('btnDownload').addEventListener('click', async () => {
     return;
   }
   try {
-    const res = await fetch(`${API_BASE}/download/${downloadToken}`);
+    const res = await fetch(`${API_BASE}/download?token=${downloadToken}`);
     if (!res.ok) throw new Error('Download failed');
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);

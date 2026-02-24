@@ -4,23 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ToolVerse — Free Online Tools</title>
-<meta name="description" content="Free online tools for cargo loading optimization, PDF to Excel conversion, and more. No sign-up, no limits.">
-<meta name="keywords" content="free online tools, PDF to Excel, loading system, cargo optimizer, file converter, toolverse">
-<meta name="author" content="ToolVerse">
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="https://YOUR-DOMAIN/">
-
-<!-- Open Graph (Facebook, LinkedIn) -->
-<meta property="og:type" content="website">
-<meta property="og:title" content="ToolVerse — Free Online Tools">
-<meta property="og:description" content="Free online tools for cargo loading optimization, PDF to Excel conversion, and more.">
-<meta property="og:url" content="https://YOUR-DOMAIN/">
-
-<!-- Twitter Card -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ToolVerse — Free Online Tools">
-<meta name="twitter:description" content="Free online tools for cargo loading optimization, PDF to Excel conversion, and more.">
-
+<meta name="description" content="Free online tools for logistics, file conversion, and more. No sign-up required.">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -47,7 +31,6 @@
     overflow-x: hidden;
   }
 
-  /* ── Background ── */
   .bg-grid {
     position: fixed; inset: 0; z-index: 0;
     background-image:
@@ -73,7 +56,6 @@
     pointer-events: none; z-index: 1; transform: translate(-50%,-50%);
   }
 
-  /* ── Nav ── */
   nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     padding: 14px 24px;
@@ -106,7 +88,6 @@
   }
   .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
 
-  /* ── Hero ── */
   .container { position: relative; z-index: 2; max-width: 960px; margin: 0 auto; padding: 0 24px; }
 
   .hero {
@@ -134,7 +115,6 @@
   }
   @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 
-  /* ── Tools Grid ── */
   .tools-section { padding-bottom: 120px; }
   .tools-grid {
     display: grid;
@@ -206,7 +186,6 @@
     background: var(--accent); color: white; transform: translateX(2px);
   }
 
-  /* ── Coming Soon ── */
   .coming-soon {
     border: 1px dashed rgba(255,255,255,0.08);
     background: transparent;
@@ -218,7 +197,6 @@
   }
   .coming-soon span { font-size: 1.4rem; opacity: 0.6; }
 
-  /* ── Footer ── */
   footer {
     position: relative; z-index: 2;
     padding: 36px 24px; text-align: center;
@@ -245,11 +223,11 @@
 
 <nav>
   <div class="nav-inner">
-    <a href="#" class="logo">
+    <a href="/" class="logo">
       <div class="logo-icon">⚡</div>
       ToolVerse
     </a>
-    <a href="/cdn-cgi/l/email-protection#5a23352f281a3f373b333674393537" class="nav-link">Contact</a>
+    <a href="mailto:your@email.com" class="nav-link">Contact</a>
   </div>
 </nav>
 
@@ -262,7 +240,8 @@
   <section class="tools-section">
     <div class="tools-grid">
 
-      <a href="./toolverse-code/toolverse/packing/index.html" class="tool-card" style="--card-glow:rgba(108,92,231,0.12); --card-accent:rgba(108,92,231,0.3)">
+      <!-- ★ FIXED: /packing instead of ./toolverse/packing/index.html -->
+      <a href="/packing" class="tool-card" style="--card-glow:rgba(108,92,231,0.12); --card-accent:rgba(108,92,231,0.3)">
         <div class="card-top">
           <div class="card-icon" style="background:linear-gradient(135deg,#6C5CE7,#a29bfe); color:#fff">📦</div>
           <span class="card-tag" style="color:#6C5CE7; background:rgba(108,92,231,0.12)">LOGISTICS</span>
@@ -275,7 +254,8 @@
         </div>
       </a>
 
-      <a href="./toolverse-code/toolverse/pdf-to-excel/frontend/index.html" class="tool-card" style="--card-glow:rgba(0,210,255,0.12); --card-accent:rgba(0,210,255,0.3)">
+      <!-- ★ FIXED: /pdf-to-excel instead of ./toolverse/pdf-to-excel/frontend/index.html -->
+      <a href="/pdf-to-excel" class="tool-card" style="--card-glow:rgba(0,210,255,0.12); --card-accent:rgba(0,210,255,0.3)">
         <div class="card-top">
           <div class="card-icon" style="background:linear-gradient(135deg,#00D2FF,#3a7bd5); color:#fff">📄</div>
           <span class="card-tag" style="color:#00D2FF; background:rgba(0,210,255,0.1)">CONVERTER</span>
@@ -301,10 +281,18 @@
   <p>© 2026 ToolVerse</p>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 const glow = document.getElementById('cursorGlow');
 let mx = 0, my = 0, gx = 0, gy = 0;
 document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
 (function animate() {
   gx += (mx - gx) * 0.07;
-  gy += (
+  gy += (my - gy) * 0.07;
+  glow.style.left = gx + 'px';
+  glow.style.top = gy + 'px';
+  requestAnimationFrame(animate);
+})();
+</script>
+
+</body>
+</html>

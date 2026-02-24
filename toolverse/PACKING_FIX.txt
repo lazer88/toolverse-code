@@ -1,0 +1,21 @@
+PACKING INDEX.HTML — REQUIRED CHANGES
+======================================
+
+In the file: packing/public/packing/index.html
+
+Find and replace these 3 lines near the bottom of the file:
+
+BEFORE:
+  <script src="/toolverse/packing/js/api.js"></script>
+  <script src="/toolverse/packing/js/packer3d.js"></script>
+  <script src="/toolverse/packing/js/app.js"></script>
+
+AFTER:
+  <script src="/packing/js/api.js"></script>
+  <script src="/packing/js/packer3d.js"></script>
+  <script src="/packing/js/app.js"></script>
+
+That's it — just remove "/toolverse" prefix from the 3 script paths.
+
+Also check packing/js/api.js — if it calls "/toolverse/api/pack" or similar,
+change it to "/api/pack".
