@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Bin Packing Optimizer</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="toolbar">
+  <div class="toolbar-left">
+    <a href="/" style="text-decoration:none;color:#6b7280;font-size:13px;margin-right:8px;padding:4px 8px;border-radius:4px;transition:all .15s" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">← Tools</a><span class="toolbar-title">📦 3D Bin Packing</span>
+    <span class="toolbar-sub">Extreme Points Algorithm</span>
+  </div>
+  <button class="btn-primary" id="btn-pack" onclick="startPacking()"><span>▶</span> Start Packing</button>
+</div>
+<div class="main-content">
+  <div class="top-section">
+    <div class="config-panel">
+      <div class="config-group">
+        <div class="section-title">Container Config</div>
+        <label class="config-label">Container Type</label>
+        <select class="config-select" id="container-type">
+          <option value="40HC">40HC — 1203×269×235 cm</option>
+          <option value="40GP">40GP — 1203×239×235 cm</option>
+          <option value="20GP">20GP — 589×239×235 cm</option>
+        </select>
+      </div>
+      <div class="config-group">
+        <label class="config-label">Min Support Ratio</label>
+        <div class="slider-container">
+          <div class="slider-header">
+            <span style="font-size:11px;color:var(--gray-400)">50%</span>
+            <span class="slider-value" id="support-value">75%</span>
+            <span style="font-size:11px;color:var(--gray-400)">100%</span>
+          </div>
+          <input type="range" id="support-slider" min="50" max="100" step="5" value="75" oninput="document.getElementById('support-value').textContent=this.value+'%'">
+        </div>
+      </div>
+      <div class="config-group">
+        <label class="checkbox-row">
+          <input type="checkbox" id="enable-aggregation" checked> Enable Aggregation
+        </label>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:4px;margin-left:24px;">Auto-aggregate items &lt;1/10 container &amp; qty &gt;20</div>
+      </div>
+      <div id="results-section" style="display:none">
+        <div class="section-title">Packing Results</div>
+        <div class="stats-grid">
+          <div class="stat-item"><div class="stat-label">Loaded</div><div class="stat-value green" id="stat-packed">—</div></div>
+          <div class="stat-item"><div class="stat-label">Unloaded</div><div class="stat-value red" id="stat-unpacked">—</div></div>
+          <div class="stat-item"><div class="stat-label">Load Rate</div><div class="stat-value blue" id="stat-pack-rate">—</div></div>
+          <div class="stat-item"><div class="stat-label">Space Util.</div><div class="stat-value blue" id="stat-space-rate">—</div></div>
+          <div class="stat-item"><div class="stat-label">Actual / Max Wt.</div><div class="stat-value orange" id="stat-weight">—</div></div>
+          <div class="stat-item"><div class="stat-label">Weight Util.</div><div class="stat-value blue" id="stat-weight-rate">—</div></div>
+          <div class="stat-item"><div class="stat-label">Calc Time</div><div class="stat-value" id="stat-time">—</div></div>
+          <div class="stat-item"><div class="stat-label">CoG Offset</div><div class="stat-value" id="stat-cog">—</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="table-section">
+      <div class="table-header-bar">
+        <span class="table-title">Cargo List</span>
+        <button class="btn-secondary" onclick="addItemRow()">＋ Add Item</button>
+      </div>
+      <div class="table-wrapper">
+        <table><thead><tr>
+          <th style="width:180px">Name</th><th style="width:100px">Length(cm)</th><th style="width:100px">Height(cm)</th>
+          <th style="width:100px">Width(cm)</th><th style="width:100px">Weight(kg)</th><th style="width:90px">Qty</th>
+          <th style="width:90px">Stack Limit</th><th style="width:90px">Rotation</th><th style="width:140px">Status</th><th style="width:60px"></th>
+        </tr></thead><tbody id="items-tbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-section">
+    <div class="viz-header">
+      <span class="viz-title">🎨 3D Visualization</span>
+      <div class="viz-controls">
+        <button class="btn-icon" onclick="Viz.resetCamera()">🎥 Reset View</button>
+        <button class="btn-icon" id="btn-rotate" onclick="(function(){const a=Viz.toggleRotate();document.getElementById('btn-rotate').classList.toggle('active',a)})()">⏯️ Auto Rotate</button>
+        <button class="btn-icon" onclick="Viz.screenshot()">📸 Screenshot</button>
+      </div>
+    </div>
+    <div id="canvas-container">
+      <div id="dim-labels"></div>
+      <div id="legend-panel"><div class="legend-title">Legend</div><div id="legend-items"></div></div>
+    </div>
+  </div>
+</div>
+<div id="tooltip"><div class="tip-name"></div><div class="tip-divider"></div><div class="tip-details"></div></div>
+<div id="loading-overlay"><div class="spinner"></div><div class="loading-text">Calculating packing solution...</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="js/api.js"></script>
+<script src="js/packer3d.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
