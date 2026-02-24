@@ -1,13 +1,6 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/**/*.py", "use": "@vercel/python" },
-    { "src": "public/**", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/packing$", "dest": "/public/packing/index.html" },
-    { "src": "/packing/(.*)", "dest": "/public/packing/$1" },
-    { "src": "/(.*)", "dest": "/public/$1" }
+  "rewrites": [
+    { "source": "/packing", "destination": "/packing/index.html" }
   ]
 }
