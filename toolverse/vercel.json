@@ -1,6 +1,6 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/packing", "destination": "/packing/index.html" }
+    { "source": "/toolverse/packing", "destination": "/toolverse/packing/index.html" }
   ]
 }
