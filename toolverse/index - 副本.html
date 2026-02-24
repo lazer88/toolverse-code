@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toolverse</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#f8fafc;color:#1e293b;min-height:100vh}
+  .header{padding:48px 24px 32px;text-align:center}
+  .header h1{font-size:32px;font-weight:800;color:#0f172a;margin-bottom:8px}
+  .header h1 span{background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .header p{font-size:15px;color:#64748b;max-width:480px;margin:0 auto}
+  .tools-grid{max-width:800px;margin:0 auto;padding:0 24px 48px;display:grid;grid-template-columns:1fr;gap:12px}
+  .tool-card{display:flex;align-items:center;gap:16px;padding:20px 24px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;text-decoration:none;color:inherit;transition:all .2s ease}
+  .tool-card:hover{border-color:#6366f1;box-shadow:0 4px 16px rgba(99,102,241,.12);transform:translateY(-2px)}
+  .tool-icon{font-size:32px;width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:12px;flex-shrink:0}
+  .tool-icon.packing{background:#eef2ff}
+  .tool-icon.placeholder{background:#f1f5f9}
+  .tool-info{flex:1;min-width:0}
+  .tool-info h3{font-size:16px;font-weight:600;color:#0f172a;margin-bottom:4px}
+  .tool-info p{font-size:13px;color:#64748b;line-height:1.5}
+  .tool-arrow{font-size:18px;color:#cbd5e1;flex-shrink:0;transition:color .2s}
+  .tool-card:hover .tool-arrow{color:#6366f1}
+  .tool-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;margin-left:8px;vertical-align:middle}
+  .badge-live{background:#dcfce7;color:#166534}
+  .badge-soon{background:#fef3c7;color:#92400e}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🧰 Tool<span>verse</span></h1>
+  <p>A collection of useful tools. Click any card to get started.</p>
+</div>
+<div class="tools-grid">
+
+  <!-- ✅ 3D Bin Packing — LIVE -->
+  <a href="/packing" class="tool-card">
+    <div class="tool-icon packing">📦</div>
+    <div class="tool-info">
+      <h3>3D Bin Packing <span class="tool-badge badge-live">LIVE</span></h3>
+      <p>Optimize container loading with Extreme Points Algorithm. Supports 40HC/40GP/20GP containers, stack limits, small item aggregation, and interactive 3D visualization.</p>
+    </div>
+    <span class="tool-arrow">→</span>
+  </a>
+
+  <!-- Placeholder for future tools -->
+  <a href="#" class="tool-card" style="opacity:0.5;pointer-events:none">
+    <div class="tool-icon placeholder">🔧</div>
+    <div class="tool-info">
+      <h3>More Tools <span class="tool-badge badge-soon">COMING SOON</span></h3>
+      <p>Additional tools will appear here as they are added to the collection.</p>
+    </div>
+    <span class="tool-arrow">→</span>
+  </a>
+
+</div>
+</body>
+</html>

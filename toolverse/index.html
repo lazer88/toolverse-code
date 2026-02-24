@@ -3,57 +3,308 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Toolverse</title>
+<title>ToolVerse — Free Online Tools</title>
+<meta name="description" content="Free online tools for cargo loading optimization, PDF to Excel conversion, and more. No sign-up, no limits.">
+<meta name="keywords" content="free online tools, PDF to Excel, loading system, cargo optimizer, file converter, toolverse">
+<meta name="author" content="ToolVerse">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://YOUR-DOMAIN/">
+
+<!-- Open Graph (Facebook, LinkedIn) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="ToolVerse — Free Online Tools">
+<meta property="og:description" content="Free online tools for cargo loading optimization, PDF to Excel conversion, and more.">
+<meta property="og:url" content="https://YOUR-DOMAIN/">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ToolVerse — Free Online Tools">
+<meta name="twitter:description" content="Free online tools for cargo loading optimization, PDF to Excel conversion, and more.">
+
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#f8fafc;color:#1e293b;min-height:100vh}
-  .header{padding:48px 24px 32px;text-align:center}
-  .header h1{font-size:32px;font-weight:800;color:#0f172a;margin-bottom:8px}
-  .header h1 span{background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .header p{font-size:15px;color:#64748b;max-width:480px;margin:0 auto}
-  .tools-grid{max-width:800px;margin:0 auto;padding:0 24px 48px;display:grid;grid-template-columns:1fr;gap:12px}
-  .tool-card{display:flex;align-items:center;gap:16px;padding:20px 24px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;text-decoration:none;color:inherit;transition:all .2s ease}
-  .tool-card:hover{border-color:#6366f1;box-shadow:0 4px 16px rgba(99,102,241,.12);transform:translateY(-2px)}
-  .tool-icon{font-size:32px;width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:12px;flex-shrink:0}
-  .tool-icon.packing{background:#eef2ff}
-  .tool-icon.placeholder{background:#f1f5f9}
-  .tool-info{flex:1;min-width:0}
-  .tool-info h3{font-size:16px;font-weight:600;color:#0f172a;margin-bottom:4px}
-  .tool-info p{font-size:13px;color:#64748b;line-height:1.5}
-  .tool-arrow{font-size:18px;color:#cbd5e1;flex-shrink:0;transition:color .2s}
-  .tool-card:hover .tool-arrow{color:#6366f1}
-  .tool-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;margin-left:8px;vertical-align:middle}
-  .badge-live{background:#dcfce7;color:#166534}
-  .badge-soon{background:#fef3c7;color:#92400e}
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #08090E;
+    --surface: #0F1117;
+    --surface-hover: #161821;
+    --border: rgba(255,255,255,0.06);
+    --border-hover: rgba(255,255,255,0.12);
+    --text: #E8E9ED;
+    --text-dim: #6B6F80;
+    --accent: #6C5CE7;
+    --cyan: #00D2FF;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Background ── */
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 70% 50% at 50% 0%, black 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 50% at 50% 0%, black 40%, transparent 100%);
+  }
+  .bg-glow {
+    position: fixed; border-radius: 50%; filter: blur(140px); opacity: 0.25; z-index: 0; pointer-events: none;
+  }
+  .bg-glow.a { width: 500px; height: 500px; background: var(--accent); top: -180px; left: -80px; animation: drift 14s ease-in-out infinite; }
+  .bg-glow.b { width: 450px; height: 450px; background: var(--cyan); bottom: -200px; right: -150px; animation: drift 18s ease-in-out infinite reverse; }
+  @keyframes drift {
+    0%, 100% { transform: translate(0,0); }
+    50% { transform: translate(30px, -20px); }
+  }
+
+  .cursor-glow {
+    position: fixed; width: 280px; height: 280px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(108,92,231,0.07), transparent 70%);
+    pointer-events: none; z-index: 1; transform: translate(-50%,-50%);
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 14px 24px;
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    background: rgba(8,9,14,0.75);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
+    max-width: 960px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em;
+    text-decoration: none; color: var(--text);
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .nav-link {
+    color: var(--text-dim); text-decoration: none;
+    font-size: 0.82rem; font-weight: 500;
+    padding: 6px 14px; border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+  /* ── Hero ── */
+  .container { position: relative; z-index: 2; max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    padding: 150px 0 64px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 800; letter-spacing: -0.04em; line-height: 1.1;
+    margin-bottom: 16px;
+    animation: fadeUp 0.7s ease-out;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% 200%;
+    animation: gradShift 6s ease-in-out infinite;
+  }
+  @keyframes gradShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  .hero p {
+    font-size: 1.05rem; color: var(--text-dim); max-width: 400px;
+    margin: 0 auto; line-height: 1.6; font-weight: 300;
+    animation: fadeUp 0.7s ease-out 0.1s both;
+  }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── Tools Grid ── */
+  .tools-section { padding-bottom: 120px; }
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .tool-card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    text-decoration: none; color: inherit;
+    display: flex; flex-direction: column; gap: 14px;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+    opacity: 0; transform: translateY(24px);
+    animation: fadeUp 0.6s ease-out forwards;
+  }
+  .tool-card:nth-child(1) { animation-delay: 0.05s; }
+  .tool-card:nth-child(2) { animation-delay: 0.12s; }
+
+  .tool-card::before {
+    content: ''; position: absolute; inset: 0; border-radius: 14px; padding: 1px;
+    background: linear-gradient(135deg, transparent, var(--card-accent, rgba(108,92,231,0.3)), transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude; -webkit-mask-composite: xor;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .tool-card:hover::before { opacity: 1; }
+  .tool-card:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.25), 0 0 32px var(--card-glow, rgba(108,92,231,0.05));
+  }
+
+  .card-top { display: flex; align-items: center; justify-content: space-between; }
+  .card-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0; transition: transform 0.3s;
+  }
+  .tool-card:hover .card-icon { transform: scale(1.06) rotate(-2deg); }
+
+  .card-tag {
+    padding: 3px 9px; border-radius: 6px;
+    font-size: 0.68rem; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .card-title { font-size: 1.08rem; font-weight: 600; letter-spacing: -0.01em; }
+  .card-desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.6; font-weight: 300; flex-grow: 1; }
+
+  .card-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 14px; border-top: 1px solid var(--border);
+  }
+  .card-meta { font-size: 0.72rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px; }
+  .card-arrow {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); font-size: 14px; transition: all 0.3s;
+  }
+  .tool-card:hover .card-arrow {
+    background: var(--accent); color: white; transform: translateX(2px);
+  }
+
+  /* ── Coming Soon ── */
+  .coming-soon {
+    border: 1px dashed rgba(255,255,255,0.08);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 160px; border-radius: 14px;
+    color: var(--text-dim); font-size: 0.88rem; font-weight: 400;
+    opacity: 0; animation: fadeUp 0.6s ease-out 0.2s forwards;
+    flex-direction: column; gap: 6px;
+  }
+  .coming-soon span { font-size: 1.4rem; opacity: 0.6; }
+
+  /* ── Footer ── */
+  footer {
+    position: relative; z-index: 2;
+    padding: 36px 24px; text-align: center;
+    border-top: 1px solid var(--border);
+  }
+  footer p { color: var(--text-dim); font-size: 0.78rem; font-weight: 300; }
+
+  @media (max-width: 640px) {
+    .tools-grid { grid-template-columns: 1fr; }
+    .nav-link { display: none; }
+  }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
 </style>
 </head>
 <body>
-<div class="header">
-  <h1>🧰 Tool<span>verse</span></h1>
-  <p>A collection of useful tools. Click any card to get started.</p>
-</div>
-<div class="tools-grid">
 
-  <!-- ✅ 3D Bin Packing — LIVE -->
-  <a href="/packing" class="tool-card">
-    <div class="tool-icon packing">📦</div>
-    <div class="tool-info">
-      <h3>3D Bin Packing <span class="tool-badge badge-live">LIVE</span></h3>
-      <p>Optimize container loading with Extreme Points Algorithm. Supports 40HC/40GP/20GP containers, stack limits, small item aggregation, and interactive 3D visualization.</p>
+<div class="bg-grid"></div>
+<div class="bg-glow a"></div>
+<div class="bg-glow b"></div>
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-icon">⚡</div>
+      ToolVerse
+    </a>
+    <a href="/cdn-cgi/l/email-protection#5a23352f281a3f373b333674393537" class="nav-link">Contact</a>
+  </div>
+</nav>
+
+<div class="container">
+  <section class="hero">
+    <h1>Free Online <span>Tools</span></h1>
+    <p>Simple, fast utilities — no sign-up required. More tools added regularly.</p>
+  </section>
+
+  <section class="tools-section">
+    <div class="tools-grid">
+
+      <a href="./toolverse-code/toolverse/packing/index.html" class="tool-card" style="--card-glow:rgba(108,92,231,0.12); --card-accent:rgba(108,92,231,0.3)">
+        <div class="card-top">
+          <div class="card-icon" style="background:linear-gradient(135deg,#6C5CE7,#a29bfe); color:#fff">📦</div>
+          <span class="card-tag" style="color:#6C5CE7; background:rgba(108,92,231,0.12)">LOGISTICS</span>
+        </div>
+        <div class="card-title">Loading System</div>
+        <div class="card-desc">Smart cargo loading planner with space optimization and 3D visualization. Maximize container utilization.</div>
+        <div class="card-footer">
+          <div class="card-meta">⚡ Free &amp; Instant</div>
+          <div class="card-arrow">→</div>
+        </div>
+      </a>
+
+      <a href="./toolverse-code/toolverse/pdf-to-excel/frontend/index.html" class="tool-card" style="--card-glow:rgba(0,210,255,0.12); --card-accent:rgba(0,210,255,0.3)">
+        <div class="card-top">
+          <div class="card-icon" style="background:linear-gradient(135deg,#00D2FF,#3a7bd5); color:#fff">📄</div>
+          <span class="card-tag" style="color:#00D2FF; background:rgba(0,210,255,0.1)">CONVERTER</span>
+        </div>
+        <div class="card-title">PDF to Excel</div>
+        <div class="card-desc">Extract tables from PDF files into clean Excel spreadsheets. Batch support, layout preserved.</div>
+        <div class="card-footer">
+          <div class="card-meta">⚡ Free &amp; Instant</div>
+          <div class="card-arrow">→</div>
+        </div>
+      </a>
+
+      <div class="coming-soon">
+        <span>🚀</span>
+        More tools coming soon
+      </div>
+
     </div>
-    <span class="tool-arrow">→</span>
-  </a>
-
-  <!-- Placeholder for future tools -->
-  <a href="#" class="tool-card" style="opacity:0.5;pointer-events:none">
-    <div class="tool-icon placeholder">🔧</div>
-    <div class="tool-info">
-      <h3>More Tools <span class="tool-badge badge-soon">COMING SOON</span></h3>
-      <p>Additional tools will appear here as they are added to the collection.</p>
-    </div>
-    <span class="tool-arrow">→</span>
-  </a>
-
+  </section>
 </div>
-</body>
-</html>
+
+<footer>
+  <p>© 2026 ToolVerse</p>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+const glow = document.getElementById('cursorGlow');
+let mx = 0, my = 0, gx = 0, gy = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function animate() {
+  gx += (mx - gx) * 0.07;
+  gy += (
