@@ -1,83 +1,101 @@
-# ToolVerse 修复指南
+# ToolVerse 修复方案 — 最终版
 
-## 问题根因
+## 修改总结
 
-### 1. Packing 404
-**原因**：路径层级错误。`toolverse` 是 Vercel 的根目录，但代码中到处引用 `/toolverse/...` 前缀，导致实际路径多了一层。
+你的项目有两个根本问题，现在全部修复了：
 
-**修复**：
-| 文件 | 修改 |
-|------|------|
-| `index.html`（首页） | `./toolverse/packing/index.html` → `/packing` |
-| `packing/public/packing/index.html` | `src="/toolverse/packing/js/api.js"` → `src="/packing/js/api.js"`（3处） |
-| `packing/js/api.js` | 如果里面有 `/toolverse/api/pack` → 改为 `/api/pack` |
-| `vercel.json` | 添加 rewrite: `/packing` → `/packing/public/packing/index.html` |
+### 问题 1：Packing 404
+**根因**：`pack.py` 放在 `packing/api/pack.py`，Vercel 自动映射为 `/packing/api/pack`，但前端 `api.js` 请求的是 `/api/pack`，找不到就返回 404 HTML，前端 `JSON.parse()` 失败。
 
-### 2. PDF-to-Excel 服务器错误
-**原因**：
-1. `main.py` 用 FastAPI 写法，Vercel 不兼容（需要 `BaseHTTPRequestHandler`）
-2. `tabula-py` 依赖 Java，Vercel 没有 Java 运行时
-3. `requirements.txt` 只有 `fastapi==0.104.1`，缺少所有必要依赖
+**修复**：把 `pack.py` 移到根目录 `api/pack.py`，Vercel 自动映射为 `/api/pack`，和 `api.js` 匹配。
+
+### 问题 2：PDF-to-Excel 服务器错误
+**根因**：
+- `tabula-py` 需要 Java，Vercel 没有 Java
+- `main.py` 用 FastAPI，Vercel 不支持（要用 BaseHTTPRequestHandler）
+- `requirements.txt` 只有 fastapi，缺少所有依赖
 
 **修复**：
-| 文件 | 修改 |
-|------|------|
-| `pdf-to-excel/api/convert.py` | 全新重写：用 `pdfplumber`（纯Python）替代 `tabula-py`（需Java），用 `BaseHTTPRequestHandler` 替代 FastAPI |
-| `requirements.txt` | `pdfplumber==0.11.4` + `openpyxl==3.1.5` |
-| `pdf-to-excel/frontend/index.html` | `API_BASE` 从 `/api` 改为 `/api/pdf`，下载URL改为 query param |
-| `vercel.json` | 添加 API 路由和页面 rewrite |
+- 新建 `api/pdf-convert.py`，用 pdfplumber（纯 Python）+ openpyxl
+- 用 BaseHTTPRequestHandler（和 pack.py 同样格式）
+- `requirements.txt` 改为 pdfplumber + openpyxl
 
 ---
 
-## 需要替换的文件清单
+## 你需要执行的操作
+
+### 第 1 步：替换/新增文件
 
 ```
-toolverse/                          ← Vercel 根目录
-├── index.html                      ← ★ 替换（修复工具链接）
-├── vercel.json                     ← ★ 替换（修复所有路由）
-├── requirements.txt                ← ★ 替换（pdfplumber + openpyxl）
+toolverse/                         ← 你的 Vercel 根目录
+│
+├── vercel.json                    ← ★ 替换为新版
+├── requirements.txt               ← ★ 替换为新版
+├── index.html                     ← ★ 替换为新版（修复了链接路径）
+│
+├── api/                           ← ★ 新建此目录
+│   ├── pack.py                    ← ★ 从 packing/api/pack.py 移到这里
+│   └── pdf-convert.py             ← ★ 全新文件
 │
 ├── packing/
-│   ├── api/
-│   │   └── pack.py                 ← 不变
+│   ├── api/                       ← 此目录可以保留或删除，不再使用
 │   ├── public/packing/
-│   │   ├── index.html              ← ★ 修改3处 script src 路径
-│   │   ├── css/                    ← 不变
+│   │   ├── index.html             ← ★ 修改 3 处 script 路径（见下方）
+│   │   ├── css/
 │   │   └── js/
-│   │       ├── api.js              ← ★ 检查并修复 API URL
-│   │       ├── app.js              ← 不变
-│   │       └── packer3d.js         ← 不变
-│   └── index.html                  ← 不变
+│   │       ├── api.js             ← 不需要修改（/api/pack 路径正确）
+│   │       ├── app.js
+│   │       └── packer3d.js
+│   └── ...
 │
 ├── pdf-to-excel/
-│   ├── api/
-│   │   └── convert.py              ← ★ 全新文件（替换 backend/main.py）
 │   ├── frontend/
-│   │   └── index.html              ← ★ 替换（修复 API 路径）
-│   ├── backend/                    ← 可删除（不再需要）
-│   │   └── main.py                 ← 已被 api/convert.py 替代
-│   └── ...
+│   │   └── index.html             ← ★ 替换为新版
+│   ├── backend/                   ← 可删除（不再使用）
+│   └── api/                       ← 可删除（不再使用，function 已移到根 api/）
 │
 └── .gitignore
 ```
 
-## 部署步骤
+### 第 2 步：修改 packing 的 index.html
 
-1. 替换上述标记 ★ 的文件
-2. 删除 `pdf-to-excel/backend/` 目录（已不需要）
-3. 确认 `packing/js/api.js` 中的 API 地址是 `/api/pack`
-4. `git add . && git commit -m "fix: routing and PDF engine" && git push`
-5. Vercel 自动部署
+在 `packing/public/packing/index.html` 底部找到这 3 行：
 
-## vercel.json 路由说明
+```html
+<!-- 改之前 -->
+<script src="/toolverse/packing/js/api.js"></script>
+<script src="/toolverse/packing/js/packer3d.js"></script>
+<script src="/toolverse/packing/js/app.js"></script>
 
+<!-- 改之后 -->
+<script src="/packing/js/api.js"></script>
+<script src="/packing/js/packer3d.js"></script>
+<script src="/packing/js/app.js"></script>
 ```
-首页        /                   → /index.html（自动）
-Packing页   /packing            → /packing/public/packing/index.html
-Packing API /api/pack           → /packing/api/pack.py (POST)
-PDF页       /pdf-to-excel       → /pdf-to-excel/frontend/index.html
-PDF API     /api/pdf/convert    → /pdf-to-excel/api/convert.py (POST)
-PDF下载     /api/pdf/download   → /pdf-to-excel/api/convert.py (GET)
-PDF限流     /api/pdf/rate-limit → /pdf-to-excel/api/convert.py (GET)
-静态资源    /packing/js/*       → 自动从 packing/public/packing/js/* 提供
+
+> 就是去掉 `/toolverse` 前缀。toolverse 已经是根目录了。
+
+### 第 3 步：部署
+
+```bash
+git add .
+git commit -m "fix: move API to root api/, use pdfplumber, fix paths"
+git push
 ```
+
+---
+
+## 最终路由映射
+
+| 用户访问 | Vercel 实际处理 |
+|---------|---------------|
+| `/` | `index.html` (自动) |
+| `/packing` | → rewrite → `packing/public/packing/index.html` |
+| `/packing/js/api.js` | 静态文件自动提供 |
+| `/api/pack` (POST) | → `api/pack.py` (自动) |
+| `/pdf-to-excel` | → rewrite → `pdf-to-excel/frontend/index.html` |
+| `/api/pdf-convert` (GET) | → `api/pdf-convert.py` 查询限流状态 |
+| `/api/pdf-convert` (POST) | → `api/pdf-convert.py` 上传转换 |
+| `/api/pdf-convert?action=download&token=xxx` (GET) | → `api/pdf-convert.py` 下载 |
+
+**关键原则**：Vercel 自动把 `api/xxx.py` 映射为 `/api/xxx`，不需要 builds 配置，不需要 rewrites。只有静态页面的 clean URL 才需要 rewrites。

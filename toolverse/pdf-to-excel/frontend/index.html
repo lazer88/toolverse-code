@@ -241,7 +241,7 @@ body::before{content:'';position:fixed;inset:0;opacity:.35;pointer-events:none;z
 // ═══════════════════════════════════════════════════════
 //  CONFIG — Change this to your backend URL
 // ═══════════════════════════════════════════════════════
-const API_BASE = window.TABLE_EXTRACT_API || '/api/pdf';
+const API_BASE = '/api/pdf-convert';
 
 // ═══════════════════════════════════════════════════════
 //  UI LOGIC
@@ -321,7 +321,7 @@ function addLog(msg, level) {
 // ═══════════════════════════════════════════════════════
 async function fetchRateStatus() {
   try {
-    const res = await fetch(`${API_BASE}/rate-limit`);
+    const res = await fetch(API_BASE);
     if (!res.ok) return;
     const data = await res.json();
     updateRateBadge(data);
@@ -348,7 +348,7 @@ btnConvert.addEventListener('click', async () => {
 
   // Pre-check rate limit
   try {
-    const rateRes = await fetch(`${API_BASE}/rate-limit`);
+    const rateRes = await fetch(API_BASE);
     if (rateRes.ok) {
       const rateData = await rateRes.json();
       if (!rateData.allowed) {
@@ -382,7 +382,7 @@ btnConvert.addEventListener('click', async () => {
   try {
     setProgress(30, 'Processing on server…');
 
-    const res = await fetch(`${API_BASE}/convert`, {
+    const res = await fetch(API_BASE, {
       method: 'POST',
       body: formData,
     });
@@ -471,7 +471,7 @@ $('btnDownload').addEventListener('click', async () => {
     return;
   }
   try {
-    const res = await fetch(`${API_BASE}/download?token=${downloadToken}`);
+    const res = await fetch(`${API_BASE}?action=download&token=${downloadToken}`);
     if (!res.ok) throw new Error('Download failed');
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
