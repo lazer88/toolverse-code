@@ -316,6 +316,12 @@ function addLog(msg, level) {
   logBox.scrollTop = logBox.scrollHeight;
 }
 
+async function gzipBlobIfPossible(blob) {
+  if (typeof CompressionStream === 'undefined') return null;
+  const stream = blob.stream().pipeThrough(new CompressionStream('gzip'));
+  return await new Response(stream).blob();
+}
+
 // ═══════════════════════════════════════════════════════
 //  RATE LIMIT — fetched from backend (server-side by IP)
 // ═══════════════════════════════════════════════════════
@@ -374,10 +380,25 @@ btnConvert.addEventListener('click', async () => {
   setProgress(10, 'Uploading…');
 
   const formData = new FormData();
-  formData.append('file', selectedFile);
   formData.append('pages', $('inputPages').value || 'all');
   formData.append('parallel', 'true');
   formData.append('workers', '4');
+
+  let uploadFile = selectedFile;
+  if (selectedFile.size > 4 * 1024 * 1024) {
+    addLog('Large file detected, trying gzip compression before upload…', 'info');
+    const gz = await gzipBlobIfPossible(selectedFile);
+    if (gz && gz.size < selectedFile.size) {
+      uploadFile = new File([gz], selectedFile.name + '.gz', { type: 'application/gzip' });
+      formData.append('is_gzip', '1');
+      formData.append('original_name', selectedFile.name);
+      addLog(`Compressed ${(selectedFile.size/1024/1024).toFixed(2)}MB → ${(gz.size/1024/1024).toFixed(2)}MB`, 'ok');
+    } else {
+      addLog('Browser gzip unavailable or ineffective; uploading original file.', 'info');
+    }
+  }
+
+  formData.append('file', uploadFile);
 
   try {
     setProgress(30, 'Processing on server…');
