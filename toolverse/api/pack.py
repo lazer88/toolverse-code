@@ -119,6 +119,33 @@ def aggregate(items, cd):
             for gi in g: gi["isAgg"]=False; gi["aggCnt"]=1; result.append(gi)
     return result
 
+def _pack_once(expanded, container, sup):
+    packer = Packer(container, sup)
+    unpacked = []
+    for item in expanded:
+        if not packer.try_place(item):
+            unpacked.append(item)
+    return packer, unpacked
+
+
+def _strategy_key(name):
+    if name == "volume_desc":
+        return lambda a: -(a["length"] * a["height"] * a["width"])
+    if name == "weight_desc":
+        return lambda a: -a["weight"]
+    if name == "footprint_desc":
+        return lambda a: -(a["length"] * a["width"])
+    if name == "height_desc":
+        return lambda a: -a["height"]
+    return lambda a: -(a["length"] * a["height"] * a["width"])
+
+
+def _score_solution(packer, unpacked):
+    packed_count = sum(p.get("aggCnt", 1) for p in packer.packed)
+    unpacked_count = sum(u.get("aggCnt", 1) for u in unpacked)
+    return (packed_count, -unpacked_count, packer.totalW)
+
+
 def run_packing(cargo, container, sup=75, agg=True):
     t0 = time.time()
     expanded = []
@@ -133,9 +160,15 @@ def run_packing(cargo, container, sup=75, agg=True):
         expanded = aggregate(expanded, container)
         expanded.sort(key=lambda a:(1 if a.get("isAgg") else 0,-(a["length"]*a["height"]*a["width"])))
 
-    packer = Packer(container, sup); unpacked = []
-    for item in expanded:
-        if not packer.try_place(item): unpacked.append(item)
+    # Multi-pass strategy to reduce local-optimum misses of extreme-points packing.
+    # Different item orders can significantly improve final fill rate.
+    candidates = []
+    for strategy in ("volume_desc", "weight_desc", "footprint_desc", "height_desc"):
+        ordered = sorted(expanded, key=_strategy_key(strategy))
+        packer, unpacked = _pack_once(ordered, container, sup)
+        candidates.append((packer, unpacked, _score_solution(packer, unpacked)))
+
+    packer, unpacked, _ = max(candidates, key=lambda c: c[2])
     elapsed = round(time.time()-t0, 3)
 
     pc=sum(p["aggCnt"] for p in packer.packed); uc=sum(u.get("aggCnt",1) for u in unpacked); total=pc+uc
