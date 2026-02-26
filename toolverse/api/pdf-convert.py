@@ -4,7 +4,7 @@ Auto-routes to /api/pdf-convert
 Handles convert (POST), rate-limit check (GET), download (GET ?action=download&token=xxx)
 """
 from http.server import BaseHTTPRequestHandler
-import json, os, re, time, uuid, io, math
+import json, os, re, time, uuid, io, math, gzip
 from datetime import datetime
 from collections import defaultdict
 from urllib.parse import urlparse, parse_qs
@@ -213,13 +213,24 @@ class handler(BaseHTTPRequestHandler):
             if not file_info or not file_info[0]:
                 self._json(400, {"error": "No file uploaded"}); return
 
-            pdf_bytes, filename = file_info
+            uploaded_bytes, filename = file_info
             pages = fields.get("pages", "all")
+            is_gzip = fields.get("is_gzip", "0") == "1"
+
+            if is_gzip:
+                try:
+                    pdf_bytes = gzip.decompress(uploaded_bytes)
+                except Exception:
+                    self._json(400, {"error": "Invalid gzip payload"}); return
+                original_name = fields.get("original_name", filename)
+                filename = original_name if original_name else filename
+            else:
+                pdf_bytes = uploaded_bytes
 
             if not filename.lower().endswith(".pdf"):
                 self._json(400, {"error": "Only PDF files accepted"}); return
             if len(pdf_bytes) > 100 * 1024 * 1024:
-                self._json(400, {"error": "File too large (max 100MB)"}); return
+                self._json(400, {"error": "File too large (max 100MB after decompress)"}); return
 
             tables, stats, logs = extract_tables_from_pdf(pdf_bytes, pages)
 
